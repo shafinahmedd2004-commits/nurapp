@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Dashboard</title>
+<link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+
+    <!-- Hijri banner -->
+    <div class="card" style="margin-bottom:24px;background:linear-gradient(135deg,rgba(201,168,76,.13),rgba(201,168,76,.04));border-color:rgba(201,168,76,.28)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+        <div>
+          <div class="arabic arabic-xl" id="hijri-ar"></div>
+          <div style="color:var(--text-muted);font-size:.82rem;margin-top:4px" id="hijri-en"></div>
+          <div style="color:var(--text-muted);font-size:.78rem;margin-top:2px" id="gregorian-date"></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold-light)" id="greeting-txt">Assalamu Alaikum 🌙</div>
+          <div style="font-size:.82rem;color:var(--text-muted);margin-top:4px" id="clock"></div>
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px" id="location-lbl">📍 Detecting location...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prayer strip -->
+    <div class="prayer-strip-grid" id="prayer-strip"></div>
+
+    <div class="g2">
+      <!-- Left col -->
+      <div>
+        <!-- Verse of day -->
+        <div class="card" style="margin-bottom:18px;background:linear-gradient(135deg,rgba(26,92,58,.13),rgba(26,92,58,.04));border-color:rgba(26,92,58,.32)">
+          <div class="card-title" id="vod-title">📖 Verse of the Day</div>
+          <div class="arabic arabic-lg" id="vod-arabic" style="margin-bottom:12px">Loading...</div>
+          <div style="font-size:.86rem;color:var(--text-light);line-height:1.9;font-style:italic" id="vod-trans"></div>
+          <div style="font-size:.74rem;color:var(--text-muted);margin-top:10px" id="vod-ref"></div>
+        </div>
+
+        <!-- Hadith of day -->
+        <div class="hadith-card">
+          <div class="card-title" id="hod-title">📜 Hadith of the Day</div>
+          <span class="badge badge-green" id="hod-grade" style="margin-bottom:12px;display:inline-block">Sahih</span>
+          <div class="arabic arabic-md" style="margin-bottom:12px" id="hod-arabic"></div>
+          <div style="font-size:.88rem;color:var(--text-light);line-height:1.9" id="hod-text"></div>
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:10px" id="hod-ref"></div>
+        </div>
+      </div>
+
+      <!-- Right col -->
+      <div>
+        <!-- Next prayer countdown -->
+        <div class="card" style="margin-bottom:18px;text-align:center;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border-color:rgba(201,168,76,.28)">
+          <div class="card-title" id="np-title">⏳ Next Prayer</div>
+          <div style="font-family:'Cinzel',serif;font-size:2.6rem;color:var(--gold)" id="next-countdown">--:--:--</div>
+          <div style="font-size:.84rem;color:var(--gold-light);margin-top:5px" id="next-name"></div>
+          <a href="prayer.html" id="view-all-lnk" style="display:inline-block;margin-top:12px;font-size:.78rem;color:var(--text-muted);text-decoration:none">View all times →</a>
+        </div>
+
+        <!-- Quick Dhikr -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-title" id="qd-title">📿 Quick Dhikr</div>
+          <div id="quick-dhikr"></div>
+          <a href="dhikr.html" id="open-counter-lnk" class="btn-gold btn-sm" style="display:inline-block;margin-top:14px;text-decoration:none">Open Counter →</a>
+        </div>
+
+        <!-- Quick duas -->
+        <div class="card">
+          <div class="card-title" id="ma-title">🤲 Morning Adhkar</div>
+          <div id="quick-duas"></div>
+          <a href="adhkar.html" id="all-adhkar-lnk" class="btn-outline btn-sm" style="display:inline-block;margin-top:12px;text-decoration:none">All Adhkar →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row: quiz + zakat tease -->
+    <div class="g2" style="margin-top:18px">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div class="card-title" id="quiz-title">🎓 Test Your Knowledge</div>
+        <div id="quiz-desc" style="color:var(--text-muted);font-size:.85rem;line-height:1.7">Challenge yourself with our Islamic Quiz covering Quran, Fiqh, History, Prophets and more.</div>
+        <a href="quiz.html" id="start-quiz-lnk" class="btn-gold" style="text-decoration:none;width:fit-content">Start Quiz 🎓</a>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div class="card-title" id="zakat-title">💰 Zakat Reminder</div>
+        <div id="zakat-desc" style="color:var(--text-muted);font-size:.85rem;line-height:1.7">Zakat purifies your wealth. Calculate your obligation for gold, silver, cash, and business assets.</div>
+        <a href="zakat.html" id="calc-zakat-lnk" class="btn-gold" style="text-decoration:none;width:fit-content">Calculate Zakat →</a>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('index.html');
+
+// Apply UI language translations
+document.getElementById('greeting-txt').textContent = t('greeting');
+document.getElementById('location-lbl').textContent  = t('detecting');
+document.getElementById('vod-title').textContent      = t('verseOfDay');
+document.getElementById('hod-title').textContent      = t('hadithOfDay');
+document.getElementById('np-title').textContent       = '⏳ ' + t('nextPrayer');
+document.getElementById('qd-title').textContent       = t('quickDhikr');
+document.getElementById('ma-title').textContent       = t('morningAdhkar');
+document.getElementById('quiz-title').textContent     = '🎓 ' + t('testKnowledge');
+document.getElementById('quiz-desc').textContent      = t('quizDesc');
+document.getElementById('start-quiz-lnk').textContent = t('startQuiz');
+document.getElementById('zakat-title').textContent    = t('zakatReminder');
+document.getElementById('zakat-desc').textContent     = t('zakatDesc');
+document.getElementById('calc-zakat-lnk').textContent = t('calcZakat');
+document.getElementById('open-counter-lnk').textContent = t('openCounter');
+document.getElementById('all-adhkar-lnk').textContent   = t('allAdhkar');
+document.getElementById('view-all-lnk').textContent     = t('viewAllTimes');
+document.getElementById('next-name').textContent        = t('calculating');
+
+// Hijri
+const h = getHijriStr();
+document.getElementById('hijri-ar').textContent = h.ar;
+document.getElementById('hijri-en').textContent = h.en;
+document.getElementById('gregorian-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// Clock
+function tickClock(){
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+tickClock(); setInterval(tickClock,1000);
+
+// Location & prayers
+function initLocation(){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const {latitude:lat,longitude:lng} = pos.coords;
+      document.getElementById('location-lbl').textContent = `📍 ${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
+      initPrayers(lat,lng);
+    },()=>initPrayers());
+  } else initPrayers();
+}
+
+let _dashInterval = null;
+function initPrayers(lat=23.8103,lng=90.4125){
+  _activeTZ = null;
+  const allP = calcPrayerTimes(lat, lng, null, 'karachi');
+  const prayers = allP.filter(p=>['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'].includes(p.name));
+  const next = getNextPrayer(allP.filter(p=>['Fajr','Dhuhr','Asr','Maghrib','Isha'].includes(p.name)));
+  document.getElementById('prayer-strip').innerHTML = prayers.map(p=>`
+    <div class="prayer-pill ${next && p.name===next.name?'is-next':''}${p.name==='Sunrise'?' style="border-color:rgba(122,26,26,.3)"':''}">
+      <div class="pp-name">${p.name}</div>
+      <div class="pp-time">${fmt12(p.time)}</div>
+      ${p.end && p.name!=='Sunrise' ? `<div style="font-size:.6rem;color:var(--text-muted);margin-top:3px">– ${fmt12(p.end)}</div>` : ''}
+    </div>`).join('');
+
+  if(_dashInterval) clearInterval(_dashInterval);
+  function tick(){
+    const n = getNextPrayer(calcPrayerTimes(lat,lng,null,'karachi').filter(p=>['Fajr','Dhuhr','Asr','Maghrib','Isha'].includes(p.name)));
+    if(!n) return;
+    const diff=n.time-new Date(), abs=Math.abs(diff);
+    const hh=Math.floor(abs/3600000),mm=Math.floor((abs%3600000)/60000),ss=Math.floor((abs%60000)/1000);
+    document.getElementById('next-countdown').textContent=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    document.getElementById('next-name').textContent = t('until')+' '+n.name;
+  }
+  tick();
+  _dashInterval = setInterval(tick,1000);
+}
+// Init: show Dhaka times immediately, check location permission silently
+initPrayers(23.8103, 90.4125);
+if(navigator.permissions){
+  navigator.permissions.query({name:'geolocation'}).then(r=>{
+    if(r.state==='granted') initLocation();
+  }).catch(()=>{});
+}
+
+// Verse of Day
+const VOD = [
+  {ar:'إِنَّ مَعَ الْعُسْرِ يُسْرًا',trans:'"Indeed, with hardship will be ease."',ref:'Quran 94:6 – Surah Ash-Sharh'},
+  {ar:'وَلَنَبْلُوَنَّكُم بِشَيْءٍ مِّنَ الْخَوْفِ وَالْجُوعِ وَنَقْصٍ مِّنَ الْأَمْوَالِ وَالْأَنفُسِ وَالثَّمَرَاتِ',trans:'"We will surely test you with something of fear and hunger and a loss of wealth and lives and fruits; but give good tidings to the patient."',ref:'Quran 2:155 – Surah Al-Baqarah'},
+  {ar:'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',trans:'"Allah is sufficient for us, and He is the best Disposer of affairs."',ref:'Quran 3:173 – Surah Al-Imran'},
+  {ar:'وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ وَارْكَعُوا مَعَ الرَّاكِعِينَ',trans:'"And establish prayer and give zakah and bow with those who bow [in worship and obedience]."',ref:'Quran 2:43 – Surah Al-Baqarah'},
+  {ar:'وَمَا تُقَدِّمُوا لِأَنفُسِكُم مِّنْ خَيْرٍ تَجِدُوهُ عِندَ اللَّهِ',trans:'"And whatever good you put forward for yourselves – you will find it with Allah."',ref:'Quran 2:110 – Surah Al-Baqarah'},
+  {ar:'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',trans:'"Indeed, Allah is with the patient."',ref:'Quran 2:153 – Surah Al-Baqarah'},
+  {ar:'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا',trans:'"For indeed, with hardship will be ease."',ref:'Quran 94:5 – Surah Ash-Sharh'},
+];
+const vIdx = new Date().getDate() % VOD.length;
+const vod = VOD[vIdx];
+document.getElementById('vod-arabic').textContent = vod.ar;
+document.getElementById('vod-trans').textContent = vod.trans;
+document.getElementById('vod-ref').textContent = vod.ref;
+
+// Hadith of Day
+const hIdx = new Date().getDate() % HADITHS.length;
+const hod = HADITHS[hIdx];
+document.getElementById('hod-arabic').textContent = hod.ar;
+document.getElementById('hod-text').textContent = '"' + hod.en + '"';
+document.getElementById('hod-ref').textContent = '— ' + hod.ref + ' · Narrated by ' + hod.narrator;
+document.getElementById('hod-grade').textContent = '✅ ' + hod.grade;
+
+// Quick Dhikr
+document.getElementById('quick-dhikr').innerHTML = DHIKRS.slice(0,3).map(d=>`
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(201,168,76,.08)">
+    <div>
+      <div class="arabic arabic-sm">${d.ar}</div>
+      <div style="font-size:.72rem;color:var(--text-muted)">${d.rom}</div>
+    </div>
+    <div style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold)">×${d.target}</div>
+  </div>`).join('');
+
+// Quick duas
+document.getElementById('quick-duas').innerHTML = ADHKAR.morning.slice(0,2).map(d=>`
+  <div style="padding:9px 0;border-bottom:1px solid rgba(201,168,76,.08)">
+    <div style="font-size:.68rem;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px">${d.title}</div>
+    <div class="arabic arabic-sm">${d.ar}</div>
+    <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;font-style:italic">${d.rom}</div>
+  </div>`).join('');
+</script>
+</body>
+</html>

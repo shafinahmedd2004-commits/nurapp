@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Quran</title>
+<link rel="stylesheet" href="main.css"/>
+<style>
+.surah-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:28px;}
+.surah-card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.11);
+  border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:12px;
+}
+.surah-card:hover{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.28);}
+.surah-card.active-s{background:rgba(201,168,76,.14);border-color:rgba(201,168,76,.42);}
+.s-num{width:32px;height:32px;border-radius:50%;background:rgba(201,168,76,.14);border:1px solid rgba(201,168,76,.28);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);flex-shrink:0;}
+.s-info{min-width:0;}
+.s-name{font-family:'Cinzel',serif;font-size:.84rem;color:var(--gold-light);}
+.s-en{font-size:.72rem;color:var(--text-muted);}
+.s-meta{font-size:.66rem;color:rgba(138,122,90,.6);}
+#reader{display:none;}
+.reader-header{
+  background:linear-gradient(135deg,rgba(26,92,58,.15),rgba(26,92,58,.04));
+  border:1px solid rgba(26,92,58,.3);border-radius:16px;
+  padding:24px 28px;margin-bottom:22px;
+}
+.bismi{font-family:'Noto Naskh Arabic',serif;font-size:2rem;color:var(--gold);text-align:center;direction:rtl;margin-bottom:8px;}
+.loading-spinner{text-align:center;padding:60px 0;color:var(--text-muted)}
+.verse-num-circle{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.26);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:.68rem;color:var(--gold);
+}
+.v-arabic{font-family:'Noto Naskh Arabic',serif;font-size:1.85rem;color:var(--gold-light);direction:rtl;text-align:right;line-height:2.3;}
+.v-roman{font-size:.8rem;color:rgba(138,122,90,.8);line-height:1.9;font-style:italic;}
+.v-trans{font-size:.88rem;color:var(--text-light);line-height:1.9;}
+.v-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.09);border-radius:14px;padding:20px 22px;margin-bottom:12px;}
+.v-card:hover{border-color:rgba(201,168,76,.2);}
+.tab-btn{
+  background:rgba(255,255,255,.05);border:1px solid rgba(201,168,76,.14);
+  border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.8rem;
+  color:var(--text-muted);transition:all .2s;font-family:'Lato',sans-serif;
+}
+.tab-btn.active{background:rgba(201,168,76,.14);border-color:rgba(201,168,76,.38);color:var(--gold-light);}
+.search-highlight{background:rgba(201,168,76,.25);border-radius:3px;padding:0 2px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+
+    <div class="page-header">
+      <div class="page-header-row">
+        <div><div class="page-title">📖 Quran Browser</div><div class="page-sub">All 114 Surahs · Arabic · Transliteration · Translation</div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input id="search-in" type="text" placeholder="Search surah..." style="width:180px" oninput="filterSurahs(this.value)"/>
+          <button class="tab-btn" id="view-grid-btn" onclick="setView('grid')" style="font-size:.75rem">☰ All Surahs</button>
+          <button class="tab-btn active" id="view-read-btn" onclick="setView('read')" style="font-size:.75rem">📖 Reader</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language + options bar -->
+    <div id="lang-bar-root"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
+      <label style="margin:0;font-size:.78rem;color:var(--text-muted)">Show:</label>
+      <button class="tab-btn active" id="tog-ar" onclick="toggleShow('ar',this)">Arabic</button>
+      <button class="tab-btn active" id="tog-rom" onclick="toggleShow('rom',this)">Transliteration</button>
+      <button class="tab-btn active" id="tog-trans" onclick="toggleShow('trans',this)">Translation</button>
+    </div>
+
+    <!-- Grid view -->
+    <div id="surah-grid-view">
+      <div class="surah-grid" id="surah-grid"></div>
+    </div>
+
+    <!-- Reader view -->
+    <div id="reader">
+      <!-- surah selector strip -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
+        <select id="surah-sel" onchange="loadSurah(parseInt(this.value))" style="max-width:260px"></select>
+        <button class="btn-icon" onclick="prevSurah()">‹ Prev</button>
+        <button class="btn-icon" onclick="nextSurah()">Next ›</button>
+        <button class="btn-gold btn-sm" onclick="setView('grid')">☰ All Surahs</button>
+      </div>
+      <div id="reader-content"></div>
+    </div>
+
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('quran.html');
+
+// ── Build lang bar ─────────────────────────────
+document.getElementById('lang-bar-root').innerHTML = buildLangSelector('quran-lang');
+document.getElementById('quran-lang').onchange = function(){
+  localStorage.setItem('nur-lang', this.value);
+  if(currentSurah) loadSurah(currentSurah);
+};
+
+// ── Build surah grid ───────────────────────────
+let currentSurah = parseInt(localStorage.getItem('nur-last-surah'))||1;
+let showAr=true, showRom=true, showTrans=true;
+
+function buildSurahGrid(filter=''){
+  const f = filter.toLowerCase();
+  const items = SURAHS.filter(s=>!f||s[1].toLowerCase().includes(f)||s[2].toLowerCase().includes(f)||String(s[0]).includes(f));
+  document.getElementById('surah-grid').innerHTML = items.map(s=>`
+    <div class="surah-card ${s[0]===currentSurah?'active-s':''}" onclick="openSurah(${s[0]})">
+      <div class="s-num">${s[0]}</div>
+      <div class="s-info">
+        <div class="s-name">${s[1]}</div>
+        <div class="s-en">${s[2]}</div>
+        <div class="s-meta">${s[4]} · ${s[3]} verses</div>
+      </div>
+    </div>`).join('');
+}
+
+function filterSurahs(v){ buildSurahGrid(v); }
+
+function buildSurahSelect(){
+  const sel = document.getElementById('surah-sel');
+  sel.innerHTML = SURAHS.map(s=>`<option value="${s[0]}" ${s[0]===currentSurah?'selected':''}>${s[0]}. ${s[1]} – ${s[2]}</option>`).join('');
+}
+
+buildSurahGrid();
+buildSurahSelect();
+
+// ── View toggle ────────────────────────────────
+function setView(v){
+  if(v==='grid'){
+    document.getElementById('surah-grid-view').style.display='block';
+    document.getElementById('reader').style.display='none';
+    document.getElementById('view-grid-btn').classList.add('active');
+    document.getElementById('view-read-btn').classList.remove('active');
+    buildSurahGrid();
+  } else {
+    document.getElementById('surah-grid-view').style.display='none';
+    document.getElementById('reader').style.display='block';
+    document.getElementById('view-read-btn').classList.add('active');
+    document.getElementById('view-grid-btn').classList.remove('active');
+    loadSurah(currentSurah);
+  }
+}
+
+function openSurah(n){ currentSurah=n; setView('read'); }
+
+// ── Toggle sections ────────────────────────────
+function toggleShow(what, btn){
+  if(what==='ar') showAr=!showAr;
+  if(what==='rom') showRom=!showRom;
+  if(what==='trans') showTrans=!showTrans;
+  btn.classList.toggle('active');
+  document.querySelectorAll('.v-arabic').forEach(el=>el.style.display=showAr?'':'none');
+  document.querySelectorAll('.v-roman').forEach(el=>el.style.display=showRom?'':'none');
+  document.querySelectorAll('.v-trans').forEach(el=>el.style.display=showTrans?'':'none');
+}
+
+// ── Load surah from API ────────────────────────
+let loadingAbort = null;
+async function loadSurah(num){
+  currentSurah = num;
+  localStorage.setItem('nur-last-surah', num);
+  document.getElementById('surah-sel').value = num;
+  const surah = SURAHS[num-1];
+  const lang = getLang();
+
+  document.getElementById('reader-content').innerHTML = `<div class="loading-spinner"><div class="spinner"></div><p>Loading Surah ${surah[1]}…</p></div>`;
+
+  try{
+    // Fetch arabic + translation in parallel
+    const [arRes, trRes] = await Promise.all([
+      fetch(`https://api.alquran.cloud/v1/surah/${num}/ar.alafasy`),
+      fetch(`https://api.alquran.cloud/v1/surah/${num}/${lang}`)
+    ]);
+    const [arData, trData] = await Promise.all([arRes.json(), trRes.json()]);
+
+    if(arData.code!==200 || trData.code!==200) throw new Error('API error');
+
+    const arVerses = arData.data.ayahs;
+    const trVerses = trData.data.ayahs;
+
+    // Fetch transliteration (en.transliteration)
+    const romRes = await fetch(`https://api.alquran.cloud/v1/surah/${num}/en.transliteration`);
+    const romData = await romRes.json();
+    const romVerses = romData.code===200 ? romData.data.ayahs : [];
+
+    renderReader(surah, arVerses, trVerses, romVerses);
+  } catch(e){
+    document.getElementById('reader-content').innerHTML = `
+      <div class="card" style="text-align:center;color:var(--text-muted)">
+        <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+        <div>Could not load Surah. Please check your internet connection.</div>
+        <button class="btn-gold" style="margin-top:14px" onclick="loadSurah(${num})">Retry</button>
+      </div>`;
+  }
+}
+
+
+// ── Verse pagination globals ─────────────────
+var _arV=[],_trV=[],_romV=[],_curSurahData=null,_versePage=1;
+var VPP=10;
+
+function renderReader(surah,arV,trV,romV){
+  _arV=arV; _trV=trV; _romV=romV; _curSurahData=surah; _versePage=1;
+  renderVPage();
+}
+
+function renderVPage(){
+  var surah=_curSurahData, arV=_arV, trV=_trV, romV=_romV;
+  var total=arV.length, pages=Math.max(1,Math.ceil(total/VPP));
+  if(_versePage>pages) _versePage=pages;
+  var s=(_versePage-1)*VPP, e=Math.min(s+VPP,total);
+  var hasBismi=(surah[0]!==1 && surah[0]!==9);
+
+  // Build page buttons
+  var pBtns='';
+  for(var p=1;p<=pages;p++){
+    if(p===1||p===pages||Math.abs(p-_versePage)<=2){
+      var active=p===_versePage;
+      pBtns+='<button class="btn-icon" data-p="'+p+'" onclick="gotoVPage('+p+')" style="'+(active?'background:rgba(201,168,76,.22);color:var(--gold);border-color:rgba(201,168,76,.4)':'')+'">'+(active?'<strong>'+p+'</strong>':p)+'</button>';
+    } else if(Math.abs(p-_versePage)===3){
+      pBtns+='<span style="color:var(--text-muted);padding:0 3px">…</span>';
+    }
+  }
+
+  // Build verse cards
+  var cards='';
+  for(var i=0;i<e-s;i++){
+    var av=arV[s+i]||{}, tv=trV[s+i]||{}, rv=romV[s+i]||{};
+    var arText=av.text||'', trText=tv.text||'', roText=rv.text||'';
+    cards+='<div class="v-card">';
+    cards+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    cards+='<div class="verse-num-circle">'+av.numberInSurah+'</div>';
+    cards+='<div style="display:flex;gap:6px">';
+    cards+='<button class="btn-icon" onclick="copyVerseAr('+((s+i))+')">📋 AR</button>';
+    cards+='<button class="btn-icon" onclick="copyVerseTr('+((s+i))+')">📋 TR</button>';
+    cards+='</div></div>';
+    if(showAr)  cards+='<div class="v-arabic">'+arText+'</div>';
+    if(showRom && roText) cards+='<div class="v-roman">'+roText+'</div>';
+    if(showTrans && trText) cards+='<div class="v-trans">'+trText+'</div>';
+    cards+='</div>';
+  }
+
+  // Pagination bar
+  var prevBtn=_versePage>1?'<button class="btn-icon" onclick="gotoVPage('+(_versePage-1)+')">‹</button>':'';
+  var nextBtn=_versePage<pages?'<button class="btn-icon" onclick="gotoVPage('+(_versePage+1)+')">›</button>':'';
+  var pBar='<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:12px;font-size:.74rem;color:var(--text-muted)">Ayah '+(s+1)+'–'+e+' of '+total+': '+prevBtn+pBtns+nextBtn+'</div>';
+
+  var bismiHtml=hasBismi&&_versePage===1
+    ?'<div class="bismi" style="margin-top:14px">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div><div style="text-align:center;font-size:.76rem;color:var(--text-muted);margin-top:3px;font-style:italic">In the name of Allah, the Most Gracious, the Most Merciful</div>'
+    :'';
+
+  var out='<div class="reader-header">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">'
+    +'<div><div style="font-family:\'Cinzel\',serif;font-size:1.3rem;color:var(--gold-light)">'+surah[1]+'</div>'
+    +'<div style="font-size:.8rem;color:var(--text-muted);margin-top:3px">'+surah[2]+' · '+surah[4]+' · '+surah[3]+' verses · Page '+_versePage+'/'+pages+'</div></div>'
+    +'<div style="font-family:\'Noto Naskh Arabic\',serif;font-size:1.5rem;color:var(--gold)">سُورَة '+surah[1]+'</div>'
+    +'</div>'+bismiHtml+'</div>'
+    +pBar
+    +'<div id="verses-list">'+cards+'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:space-between;flex-wrap:wrap">'
+    +'<div style="display:flex;gap:6px">'
+    +(_versePage>1?'<button class="btn-icon" onclick="gotoVPage('+(_versePage-1)+')">‹ Prev</button>':'')
+    +(_versePage<pages?'<button class="btn-icon" onclick="gotoVPage('+(_versePage+1)+')">Next ›</button>':'')
+    +'</div><div style="display:flex;gap:6px">'
+    +'<button class="btn-outline" onclick="prevSurah()">‹ Surah</button>'
+    +'<button class="btn-gold" onclick="nextSurah()">Surah ›</button>'
+    +'</div></div>';
+
+  document.getElementById('reader-content').innerHTML=out;
+}
+
+function gotoVPage(p){ _versePage=p; renderVPage(); window.scrollTo({top:0,behavior:'smooth'}); }
+function copyVerseAr(i){ copyText((_arV[i]||{}).text||''); }
+function copyVerseTr(i){ copyText((_trV[i]||{}).text||''); }
+
+function prevSurah(){ if(currentSurah>1) loadSurah(currentSurah-1); }
+function nextSurah(){ if(currentSurah<114) loadSurah(currentSurah+1); }
+
+
+// Start in reader view
+setView('read');
+</script>
+</body>
+</html>

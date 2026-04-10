@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Islamic Quiz</title>
+<link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header"><div class="page-title">🎓 Islamic Quiz</div><div class="page-sub">Test your knowledge of Quran, Fiqh, History & more</div></div>
+
+    <!-- Scoreboard -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="score-strip">
+      <div class="card" style="text-align:center;padding:16px">
+        <div style="font-family:'Cinzel',serif;font-size:2rem;color:var(--gold)" id="sc-correct">0</div>
+        <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px">Correct</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px">
+        <div style="font-family:'Cinzel',serif;font-size:2rem;color:var(--text-muted)" id="sc-wrong">0</div>
+        <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px">Wrong</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px">
+        <div style="font-family:'Cinzel',serif;font-size:2rem;color:var(--gold-light)" id="sc-total">0</div>
+        <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px">Total</div>
+      </div>
+      <div class="card" style="text-align:center;padding:16px">
+        <div style="font-family:'Cinzel',serif;font-size:2rem;color:#f09080" id="sc-streak">0</div>
+        <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px">🔥 Streak</div>
+      </div>
+    </div>
+
+    <div style="max-width:680px;margin:0 auto">
+      <!-- Question -->
+      <div class="card" style="margin-bottom:18px;background:linear-gradient(135deg,rgba(26,92,58,.13),rgba(26,92,58,.04));border-color:rgba(26,92,58,.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:.7rem;letter-spacing:2px;color:var(--text-muted)" id="q-num">QUESTION 1</div>
+          <span class="badge badge-gold" id="q-topic">Quran</span>
+        </div>
+        <div style="font-size:1.05rem;color:var(--text-light);line-height:1.75" id="q-text">Loading...</div>
+      </div>
+
+      <!-- Options -->
+      <div id="q-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px"></div>
+
+      <!-- Explanation -->
+      <div id="q-exp" style="display:none;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:16px 18px;font-size:.85rem;color:var(--text-light);line-height:1.7;margin-bottom:18px"></div>
+
+      <!-- Next -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-gold" id="next-btn" onclick="nextQ()" style="display:none">Next Question →</button>
+        <button class="btn-outline" onclick="resetQuiz()">↺ Restart Quiz</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('quiz.html');
+
+const shuffled = [...QUIZ_QUESTIONS].sort(()=>Math.random()-.5);
+let qIdx=0, correct=0, wrong=0, streak=0, answered=false;
+
+function renderQ(){
+  const q=shuffled[qIdx%shuffled.length];
+  answered=false;
+  document.getElementById('q-num').textContent=`QUESTION ${qIdx+1} / ${shuffled.length}`;
+  document.getElementById('q-topic').textContent=q.topic;
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('q-exp').style.display='none';
+  document.getElementById('next-btn').style.display='none';
+  document.getElementById('q-options').innerHTML=q.opts.map((o,i)=>`
+    <div class="quiz-opt" onclick="answer(${i})">${o}</div>`).join('');
+}
+
+function answer(i){
+  if(answered) return;
+  answered=true;
+  const q=shuffled[qIdx%shuffled.length];
+  const opts=document.querySelectorAll('.quiz-opt');
+  opts[q.ans].classList.add('correct');
+  if(i===q.ans){correct++;streak++;}
+  else{opts[i].classList.add('wrong');wrong++;streak=0;}
+  document.getElementById('sc-correct').textContent=correct;
+  document.getElementById('sc-wrong').textContent=wrong;
+  document.getElementById('sc-total').textContent=correct+wrong;
+  document.getElementById('sc-streak').textContent=streak;
+  const expEl=document.getElementById('q-exp');
+  expEl.innerHTML=`💡 <strong>Explanation:</strong> ${q.exp}`;
+  expEl.style.display='block';
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQ(){ qIdx++; renderQ(); }
+function resetQuiz(){ qIdx=0; correct=0; wrong=0; streak=0; document.getElementById('sc-correct').textContent=0; document.getElementById('sc-wrong').textContent=0; document.getElementById('sc-total').textContent=0; document.getElementById('sc-streak').textContent=0; renderQ(); }
+
+renderQ();
+</script>
+</body>
+</html>

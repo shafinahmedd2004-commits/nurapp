@@ -1,0 +1,563 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&family=Noto+Naskh+Arabic:wght@400;500;700&display=swap');
+
+:root {
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dark: #8a6b28;
+  --emerald: #1a5c3a;
+  --emerald-light: #2a7a50;
+  --dark: #080f09;
+  --dark2: #0e1a11;
+  --dark3: #131f16;
+  --dark4: #192619;
+  --text-light: #f0ead8;
+  --text-muted: #8a7a5a;
+  --ruby: #7a1a1a;
+  --sky: #17405e;
+  --sidebar-w: 255px;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{
+  font-family:'Lato',sans-serif;
+  background:var(--dark);
+  color:var(--text-light);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ─── BG ─── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 5%, rgba(201,168,76,.07) 0%,transparent 65%),
+    radial-gradient(ellipse 50% 70% at 85% 90%, rgba(26,92,58,.10) 0%,transparent 65%),
+    radial-gradient(ellipse 40% 40% at 50% 45%, rgba(201,168,76,.03) 0%,transparent 60%);
+}
+body::after{ display:none; }
+
+/* ─── LAYOUT ─── */
+.layout{position:relative;z-index:1;display:flex;min-height:100vh;}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:linear-gradient(180deg,var(--dark2) 0%,var(--dark3) 100%);
+  border-right:1px solid rgba(201,168,76,.13);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;
+  will-change:transform;
+  -webkit-overflow-scrolling:touch;
+}
+.sidebar-logo{
+  padding:28px 20px 22px;
+  border-bottom:1px solid rgba(201,168,76,.1);
+  text-align:center;
+}
+.logo-arabic{font-family:'Noto Naskh Arabic',serif;font-size:2.4rem;color:var(--gold);line-height:1;}
+.logo-en{font-family:'Cinzel',serif;font-size:.72rem;color:var(--text-muted);letter-spacing:4px;margin-top:5px;text-transform:uppercase;}
+.logo-tagline{font-size:.68rem;color:rgba(138,122,90,.6);margin-top:3px;}
+
+.nav-group{padding:14px 10px 4px;}
+.nav-group-label{font-size:.6rem;letter-spacing:3px;color:rgba(138,122,90,.5);padding:0 10px 7px;text-transform:uppercase;}
+.nav-link{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 14px;border-radius:9px;
+  text-decoration:none;color:var(--text-muted);
+  font-size:.84rem;font-weight:400;
+  border:1px solid transparent;
+  margin-bottom:2px;
+  min-height:44px; /* iOS minimum tap target */
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.nav-link:hover{background:rgba(201,168,76,.07);color:var(--text-light);}
+.nav-link.active{
+  background:linear-gradient(135deg,rgba(201,168,76,.17),rgba(201,168,76,.07));
+  color:var(--gold-light);border-color:rgba(201,168,76,.22);
+}
+.nav-icon{width:17px;text-align:center;font-size:.95rem;flex-shrink:0;}
+.nav-badge{
+  margin-left:auto;background:rgba(201,168,76,.18);
+  color:var(--gold);font-size:.6rem;padding:1px 7px;border-radius:20px;
+  border:1px solid rgba(201,168,76,.3);
+}
+.sidebar-footer{
+  margin-top:auto;padding:14px 18px;
+  border-top:1px solid rgba(201,168,76,.08);
+  font-size:.68rem;color:rgba(138,122,90,.5);text-align:center;line-height:1.8;
+}
+
+/* ─── MAIN ─── */
+.main{
+  margin-left:var(--sidebar-w);
+  flex:1;
+  min-height:100vh;
+  padding:36px 40px;
+}
+
+/* ─── PAGE HEADER ─── */
+.page-header{margin-bottom:32px;}
+.page-title{
+  font-family:'Cinzel',serif;font-size:1.8rem;font-weight:600;
+  color:var(--gold-light);margin-bottom:4px;
+}
+.page-sub{color:var(--text-muted);font-size:.85rem;}
+.page-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+
+/* ─── CARDS ─── */
+.card{
+  background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  border:1px solid rgba(201,168,76,.13);
+  border-radius:16px;padding:24px;
+  
+}
+.card-title{
+  font-family:'Cinzel',serif;font-size:.7rem;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:16px;
+}
+.card + .card{margin-top:16px;}
+
+/* ─── GRID ─── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+/* ─── BUTTONS ─── */
+.btn-gold{
+  background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+  color:var(--dark);font-weight:700;font-family:'Lato',sans-serif;
+  border:none;border-radius:8px;padding:10px 22px;
+  cursor:pointer;font-size:.84rem;letter-spacing:.4px;
+  transition:background .15s,border-color .15s;
+}
+.btn-gold:hover{opacity:.9;}
+.btn-outline{
+  background:transparent;color:var(--gold);font-weight:600;
+  font-family:'Lato',sans-serif;border:1px solid rgba(201,168,76,.38);
+  border-radius:8px;padding:10px 22px;cursor:pointer;font-size:.84rem;
+  transition:background .15s,border-color .15s;
+}
+.btn-outline:hover{background:rgba(201,168,76,.08);}
+.btn-sm{padding:7px 14px;font-size:.76rem;}
+.btn-icon{
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);
+  color:var(--gold);border-radius:7px;padding:7px 12px;
+  cursor:pointer;font-size:.78rem;transition:background .15s,border-color .15s;
+  font-family:'Lato',sans-serif;
+}
+.btn-icon:hover{background:rgba(201,168,76,.18);}
+
+/* ─── FORM ─── */
+input,select,textarea{
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(201,168,76,.18);
+  color:var(--text-light);border-radius:8px;
+  padding:10px 14px;font-family:'Lato',sans-serif;
+  font-size:.86rem;outline:none;transition:border .2s;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.48);}
+select option{background:var(--dark2);}
+label{font-size:.76rem;color:var(--text-muted);display:block;margin-bottom:5px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+
+/* ─── ARABIC ─── */
+.arabic{
+  font-family:'Noto Naskh Arabic',serif;
+  direction:rtl;text-align:right;line-height:2.4;
+}
+.arabic-lg{font-size:1.9rem;color:var(--gold-light);}
+.arabic-xl{font-size:2.4rem;color:var(--gold-light);}
+.arabic-md{font-size:1.4rem;color:var(--gold-light);}
+.arabic-sm{font-size:1.1rem;color:var(--gold);}
+
+/* ─── BADGES ─── */
+.badge{
+  display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;
+  letter-spacing:.8px;border:1px solid;
+}
+.badge-gold{background:rgba(201,168,76,.15);color:var(--gold);border-color:rgba(201,168,76,.3);}
+.badge-green{background:rgba(26,92,58,.2);color:#6fdea0;border-color:rgba(26,92,58,.5);}
+.badge-red{background:rgba(122,26,26,.2);color:#f08080;border-color:rgba(122,26,26,.4);}
+.badge-blue{background:rgba(23,64,94,.25);color:#7ec8f5;border-color:rgba(23,64,94,.5);}
+
+/* ─── DIVIDER ─── */
+hr{border:none;border-top:1px solid rgba(201,168,76,.09);margin:20px 0;}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.02);}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.22);border-radius:3px;}
+
+/* ─── TOAST ─── */
+#toast{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  background:linear-gradient(135deg,rgba(201,168,76,.95),rgba(138,107,40,.95));
+  color:var(--dark);font-weight:700;font-size:.84rem;
+  padding:12px 22px;border-radius:10px;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  transform:translateY(100px);opacity:0;
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+#toast.show{transform:translateY(0);opacity:1;}
+
+/* ─── LANG SELECTOR ─── */
+.lang-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  background:rgba(201,168,76,.06);
+  border:1px solid rgba(201,168,76,.14);
+  border-radius:10px;margin-bottom:22px;flex-wrap:wrap;
+}
+.lang-bar label{margin:0;white-space:nowrap;font-size:.78rem;}
+.lang-bar select{width:auto;flex:1;min-width:160px;}
+
+/* ─── LOADING ─── */
+.spinner{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid rgba(201,168,76,.15);
+  border-top-color:var(--gold);
+  animation:spin .8s linear infinite;
+  margin:0 auto;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-box{text-align:center;padding:48px 0;color:var(--text-muted);font-size:.85rem;}
+.loading-box p{margin-top:14px;}
+
+/* ─── PRAYER PILLS ─── */
+.prayer-pill{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(201,168,76,.1);
+  border-radius:12px;padding:16px 12px;
+  text-align:center;transition:background .15s,border-color .15s;
+}
+.prayer-pill.is-next{
+  background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.06));
+  border-color:rgba(201,168,76,.45);
+}
+.pp-name{font-size:.68rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:7px;}
+.pp-time{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold-light);}
+.prayer-pill.is-next .pp-name{color:var(--gold);}
+
+/* ─── VERSE CARD ─── */
+.verse-card{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(201,168,76,.1);
+  border-radius:14px;padding:22px 24px;
+  margin-bottom:14px;transition:border .2s;
+}
+.verse-card:hover{border-color:rgba(201,168,76,.22);}
+.verse-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.verse-num{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  background:rgba(201,168,76,.13);border:1px solid rgba(201,168,76,.28);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold);
+}
+.verse-actions{display:flex;gap:7px;}
+.verse-arabic{font-family:'Noto Naskh Arabic',serif;font-size:1.8rem;color:var(--gold-light);direction:rtl;text-align:right;line-height:2.3;margin-bottom:12px;}
+.verse-roman{font-size:.82rem;color:var(--text-muted);line-height:1.8;margin-bottom:8px;font-style:italic;}
+.verse-trans{font-size:.88rem;color:var(--text-light);line-height:1.9;}
+
+/* ─── QUIZ ─── */
+.quiz-opt{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(201,168,76,.13);
+  border-radius:10px;padding:14px 18px;
+  cursor:pointer;font-size:.88rem;color:var(--text-light);
+  transition:background .15s,border-color .15s;
+}
+.quiz-opt:hover{background:rgba(201,168,76,.09);border-color:rgba(201,168,76,.3);}
+.quiz-opt.correct{background:rgba(26,92,58,.22);border-color:rgba(26,92,58,.55);color:#6fdea0;}
+.quiz-opt.wrong{background:rgba(122,26,26,.22);border-color:rgba(122,26,26,.45);color:#f08080;}
+
+/* ─── DHIKR RING ─── */
+.dhikr-ring{
+  width:210px;height:210px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,168,76,.12),rgba(201,168,76,.03));
+  border:3px solid rgba(201,168,76,.38);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:0 auto;cursor:pointer;user-select:none;
+  transition:box-shadow .12s;box-shadow:0 0 50px rgba(201,168,76,.09);
+}
+.dhikr-ring:hover{box-shadow:0 0 70px rgba(201,168,76,.18);}
+.dhikr-ring:active{transform:scale(.96);}
+.dr-num{font-family:'Cinzel',serif;font-size:3.8rem;color:var(--gold);}
+.dr-tap{font-size:.65rem;color:var(--text-muted);letter-spacing:2px;margin-top:-4px;}
+
+/* ─── ZAKAT ─── */
+.zakat-result{
+  background:linear-gradient(135deg,rgba(201,168,76,.13),rgba(201,168,76,.04));
+  border:1px solid rgba(201,168,76,.3);
+  border-radius:14px;padding:24px;text-align:center;margin-top:16px;
+}
+.zr-label{font-size:.7rem;color:var(--text-muted);letter-spacing:2px;margin-bottom:5px;}
+.zr-amount{font-family:'Cinzel',serif;font-size:2.4rem;color:var(--gold);}
+.zr-note{font-size:.78rem;color:var(--text-muted);margin-top:7px;}
+
+/* ─── COMPASS ─── */
+.compass-wrap{width:300px;height:300px;border-radius:50%;position:relative;margin:0 auto;}
+.compass-outer{
+  width:100%;height:100%;border-radius:50%;
+  border:2px solid rgba(201,168,76,.28);
+  background:radial-gradient(circle,rgba(26,92,58,.1) 0%,rgba(8,15,9,.85) 100%);
+  box-shadow:0 0 80px rgba(201,168,76,.09),inset 0 0 50px rgba(0,0,0,.5);
+  position:relative;
+}
+.compass-inner{position:absolute;inset:12px;border-radius:50%;border:1px solid rgba(201,168,76,.12);}
+.cdir{position:absolute;font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);}
+.cdir.cn{top:16px;left:50%;transform:translateX(-50%);}
+.cdir.cs{bottom:16px;left:50%;transform:translateX(-50%);}
+.cdir.ce{right:16px;top:50%;transform:translateY(-50%);}
+.cdir.cw{left:16px;top:50%;transform:translateY(-50%);}
+.cneedle{
+  position:absolute;top:50%;left:50%;
+  transform-origin:bottom center;
+  width:0;height:0;
+}
+.needle-n{
+  position:absolute;bottom:0;left:-3px;
+  width:6px;height:110px;
+  background:linear-gradient(to top,transparent,var(--gold));
+  clip-path:polygon(50% 0,100% 100%,0 100%);
+}
+.needle-s{
+  position:absolute;top:0;left:-3px;
+  width:6px;height:90px;
+  background:linear-gradient(to bottom,transparent,rgba(201,168,76,.3));
+  clip-path:polygon(50% 100%,100% 0,0 0);
+}
+.cdot{
+  position:absolute;top:50%;left:50%;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--gold);transform:translate(-50%,-50%);
+  box-shadow:0 0 10px rgba(201,168,76,.5);
+}
+
+/* ─── MEMO CARD ─── */
+.memo-card{
+  background:linear-gradient(135deg,rgba(23,64,94,.18),rgba(23,64,94,.05));
+  border:1px solid rgba(23,64,94,.4);
+  border-radius:18px;padding:32px;text-align:center;
+}
+.memo-dots{display:flex;gap:5px;justify-content:center;margin-bottom:20px;}
+.mdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.08);transition:background .2s,border-color .2s;}
+.mdot.done{background:var(--gold);}
+.mdot.current{background:var(--gold-light);box-shadow:0 0 8px var(--gold);}
+
+/* ─── HADITH ─── */
+.hadith-card{
+  background:linear-gradient(135deg,rgba(122,26,26,.09),rgba(122,26,26,.03));
+  border:1px solid rgba(122,26,26,.25);
+  border-radius:16px;padding:28px;
+}
+
+/* ─── JOURNAL ─── */
+.journal-entry{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(201,168,76,.1);
+  border-radius:12px;padding:18px 20px;margin-bottom:12px;
+}
+.je-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.je-date{font-size:.72rem;color:var(--text-muted);}
+.je-text{font-size:.9rem;color:var(--text-light);line-height:1.75;}
+
+/* ─── PRAYER STRIP GRID ─── */
+.prayer-strip-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:10px;
+  margin-bottom:24px;
+}
+
+/* ─── HAMBURGER — injected at body level, always fixed ─── */
+#menu-toggle{
+  display:none;
+  position:fixed;
+  top:12px;left:12px;
+  z-index:10001; /* above sidebar */
+  width:44px;height:44px;border-radius:10px;
+  background:rgba(8,15,9,.92);
+  border:1px solid rgba(201,168,76,.5);
+  align-items:center;justify-content:center;
+  cursor:pointer;font-size:1.2rem;color:var(--gold);
+  box-shadow:0 2px 14px rgba(0,0,0,.55);
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+#sidebar-overlay{
+  display:none;
+  position:fixed;inset:0;
+  z-index:9998;  /* below sidebar (10000) but above page content */
+  background:rgba(0,0,0,.52);
+  opacity:0;
+  transition:opacity .18s;
+  pointer-events:none;
+}
+#sidebar-overlay.show{
+  display:block;
+  opacity:1;
+  pointer-events:auto;
+  /* Shrink overlay so it never covers the open sidebar panel itself */
+  left:280px;
+}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1100px){
+  .g4{grid-template-columns:1fr 1fr;}
+  .main{padding:28px 24px;}
+}
+
+@media(max-width:820px){
+  :root{--sidebar-w:230px;}
+  .sidebar{width:230px;min-width:230px;}
+  .main{margin-left:230px;padding:20px 16px;}
+  .g2,.g3{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .page-header-row{flex-direction:column;align-items:flex-start;}
+  .page-title{font-size:1.4rem;}
+}
+
+@media(max-width:640px){
+  :root{--sidebar-w:0px;}
+
+  /* Sidebar — above overlay so links are clickable */
+  .sidebar{
+    width:280px;min-width:280px;
+    transform:translateX(-100%);
+    transition:transform .22s ease-out;
+    z-index:10000;
+    box-shadow:none;
+    will-change:auto; /* do NOT use will-change:transform — it creates a new stacking context on iOS Safari, trapping z-index and blocking taps */
+  }
+  .sidebar.open{
+    transform:translateX(0);
+    box-shadow:4px 0 24px rgba(0,0,0,.6);
+  }
+
+  /* Hamburger shown on mobile */
+  #menu-toggle{ display:flex; z-index:10001; }
+
+  .main{
+    margin-left:0;
+    padding:60px 14px 24px;   /* top pad for hamburger */
+    width:100%;
+    min-width:0;
+  }
+
+  /* Stack grids */
+  .g2,.g3,.g4{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+
+  /* Prayer strip: 3 cols on mobile */
+  .prayer-strip-grid{grid-template-columns:repeat(3,1fr)!important;}
+
+  /* Page header */
+  .page-header-row{flex-direction:column;gap:10px;}
+  .page-title{font-size:1.3rem;}
+  .page-sub{font-size:.78rem;}
+
+  /* Cards less padding */
+  .card{padding:16px;}
+
+  /* Country tabs wrap tightly */
+  #country-tabs{gap:5px;}
+  #country-tabs .btn-icon{padding:6px 8px;font-size:.72rem;}
+
+  /* Prayer list rows */
+  .prayer-row-inner{flex-wrap:wrap;}
+
+  /* Compass smaller */
+  .compass-wrap{width:240px!important;height:240px!important;}
+
+  /* Cat tabs */
+  .cat-tabs{gap:6px;}
+  .cat-tab{padding:7px 12px;font-size:.76rem;}
+
+  /* Dhikr grid */
+  .dhikr-grid{grid-template-columns:repeat(2,1fr);}
+
+  /* Hide Arabic column on very small */
+  .ar-col-hide{display:none!important;}
+
+  /* Quran surah grid */
+  .surah-grid{grid-template-columns:1fr 1fr!important;}
+
+  /* Score strip quiz */
+  #score-strip{grid-template-columns:repeat(2,1fr)!important;}
+
+  /* Zakat tabs */
+  .z-tabs{gap:5px;}
+  .ztab{padding:7px 10px;font-size:.75rem;}
+
+  /* Prayer card inner layout — stack on very narrow */
+  .prayer-row-times{min-width:70px;}
+
+  /* Countdown font smaller on mobile */
+  #cd-timer{font-size:2.2rem!important;}
+
+  /* Surah grid tighter */
+  .surah-card{padding:10px 12px;}
+
+  /* Quran reader header */
+  .reader-header{padding:16px 18px!important;}
+
+  /* Verse card */
+  .v-card{padding:14px 16px!important;}
+  .v-arabic{font-size:1.5rem!important;}
+
+  /* Quiz options */
+  .quiz-opt{padding:11px 14px;}
+
+  /* Zakat result */
+  .zr-amount{font-size:1.8rem!important;}
+
+  /* Dhikr ring counter */
+  #count-num{font-size:2.8rem!important;}
+
+  /* Memo card */
+  .memo-card{padding:20px 16px!important;}
+
+  /* Journal entry */
+  .journal-entry{padding:14px 16px;}
+
+  /* Hadith card */
+  .hadith-card{padding:18px 16px!important;}
+
+  /* Input search row in header */
+  .page-header-row > div:last-child{width:100%;}
+  .page-header-row input{width:100%!important;box-sizing:border-box;}
+}
+
+@media(max-width:360px){
+  .prayer-strip-grid{grid-template-columns:repeat(2,1fr)!important;}
+  .surah-grid{grid-template-columns:1fr!important;}
+}
+
+/* ─── MOBILE PERFORMANCE ─── */
+@media(max-width:640px){
+  /* Kill expensive background pattern on mobile */
+  body::after{display:none;}
+  /* Simplify radial gradients */
+  body::before{ background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,168,76,.04) 0%,transparent 70%); }
+  /* Remove all box-shadows on cards for perf */
+  .card{box-shadow:none;}
+  /* Smooth sidebar slide */
+  .sidebar{transition:transform .25s ease;}
+  /* Buttons: larger tap targets */
+  .btn-gold,.btn-outline{min-height:44px;}
+  .btn-icon{min-height:36px;}
+  .nav-link{min-height:44px;}
+}
+
+/* ─── COMPASS NEEDLE ─── */
+#needle-wrap{
+  transition:transform .4s cubic-bezier(.25,.46,.45,.94);
+  will-change:transform;
+}

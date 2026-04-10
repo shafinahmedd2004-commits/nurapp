@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Memorization</title>
+<link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header"><div class="page-title">🧠 Dua Memorization</div><div class="page-sub">Spaced repetition flashcards for Quranic duas</div></div>
+
+    <div class="g2">
+      <!-- Card -->
+      <div>
+        <!-- Progress dots -->
+        <div style="display:flex;gap:5px;margin-bottom:18px" id="memo-dots"></div>
+
+        <div class="memo-card" id="memo-card">
+          <div style="font-size:.68rem;color:rgba(201,168,76,.6);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px" id="memo-ref"></div>
+          <div style="font-family:'Noto Naskh Arabic',serif;font-size:1.8rem;color:var(--gold-light);direction:rtl;text-align:center;line-height:2.2;margin-bottom:14px" id="memo-ar"></div>
+
+          <div id="memo-back" style="display:none">
+            <hr style="margin:16px 0"/>
+            <div style="font-size:.8rem;color:rgba(138,122,90,.8);line-height:1.9;font-style:italic;text-align:center;margin-bottom:8px" id="memo-rom"></div>
+            <div style="font-size:.9rem;color:var(--text-light);line-height:1.9;text-align:center" id="memo-trans"></div>
+          </div>
+
+          <div style="display:none;margin-top:20px" id="memo-hint">
+            <button class="btn-outline" onclick="reveal()" style="width:100%">👁 Reveal Translation & Pronunciation</button>
+          </div>
+        </div>
+
+        <!-- Rating -->
+        <div id="memo-rating" style="display:none;margin-top:16px">
+          <div style="font-size:.78rem;color:var(--text-muted);text-align:center;margin-bottom:10px">How well did you remember it?</div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="rate('hard')" style="flex:1;padding:12px;border-radius:9px;border:1px solid rgba(122,26,26,.4);background:rgba(122,26,26,.15);color:#f08080;cursor:pointer;font-weight:600;font-family:'Lato',sans-serif">😟 Hard</button>
+            <button onclick="rate('ok')" style="flex:1;padding:12px;border-radius:9px;border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.1);color:var(--gold);cursor:pointer;font-weight:600;font-family:'Lato',sans-serif">🙂 OK</button>
+            <button onclick="rate('easy')" style="flex:1;padding:12px;border-radius:9px;border:1px solid rgba(26,92,58,.4);background:rgba(26,92,58,.15);color:#6fdea0;cursor:pointer;font-weight:600;font-family:'Lato',sans-serif">😊 Easy</button>
+          </div>
+        </div>
+
+        <div id="complete-banner" style="display:none;margin-top:16px;background:rgba(26,92,58,.2);border:1px solid rgba(26,92,58,.4);border-radius:12px;padding:20px;text-align:center">
+          <div style="font-size:1.5rem;margin-bottom:8px">🎉</div>
+          <div style="font-family:'Cinzel',serif;color:var(--gold-light);margin-bottom:6px">Mashaa Allah!</div>
+          <div style="font-size:.84rem;color:var(--text-muted);margin-bottom:14px">You've completed all cards in this session.</div>
+          <button class="btn-gold" onclick="restart()">↺ Restart</button>
+        </div>
+      </div>
+
+      <!-- Info panel -->
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">📊 Session Progress</div>
+          <div id="stats-box" style="font-size:.84rem;color:var(--text-muted);line-height:2"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">📋 All Duas</div>
+          <div id="all-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💡 Memorization Tips</div>
+          <div style="font-size:.82rem;color:var(--text-muted);line-height:1.9">
+            ✦ Read the Arabic aloud 3× before revealing<br/>
+            ✦ Understand the meaning for deeper retention<br/>
+            ✦ Rate honestly – "Hard" cards repeat sooner<br/>
+            ✦ Recite after each prayer for fast memorization<br/>
+            ✦ Teach it to someone else to solidify memory
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('memorize.html');
+
+let idx=0, revealed=false;
+let stats={hard:0,ok:0,easy:0,done:0};
+let deck=[...MEMO_DUAS];
+
+function renderCard(){
+  if(idx>=deck.length){ showComplete(); return; }
+  revealed=false;
+  const d=deck[idx];
+  document.getElementById('memo-ar').textContent=d.ar;
+  document.getElementById('memo-rom').textContent=d.rom;
+  document.getElementById('memo-trans').textContent=d.trans;
+  document.getElementById('memo-ref').textContent=d.title+' · '+d.ref;
+  document.getElementById('memo-back').style.display='none';
+  document.getElementById('memo-hint').style.display='block';
+  document.getElementById('memo-rating').style.display='none';
+  document.getElementById('complete-banner').style.display='none';
+  document.getElementById('memo-card').style.display='block';
+  renderDots();
+  renderStats();
+  renderList();
+}
+
+function reveal(){
+  revealed=true;
+  document.getElementById('memo-back').style.display='block';
+  document.getElementById('memo-hint').style.display='none';
+  document.getElementById('memo-rating').style.display='block';
+}
+
+function rate(r){
+  stats[r]++; stats.done++;
+  if(r==='hard') deck.push(deck[idx]); // repeat hard cards
+  idx++;
+  renderCard();
+}
+
+function restart(){ idx=0; stats={hard:0,ok:0,easy:0,done:0}; deck=[...MEMO_DUAS]; renderCard(); }
+
+function showComplete(){
+  document.getElementById('memo-card').style.display='none';
+  document.getElementById('memo-rating').style.display='none';
+  document.getElementById('complete-banner').style.display='block';
+  renderStats();
+}
+
+function renderDots(){
+  document.getElementById('memo-dots').innerHTML=MEMO_DUAS.map((_,i)=>`
+    <div class="mdot ${i<idx?'done':i===idx?'current':''}" style="flex:1;height:8px;border-radius:4px"></div>`).join('');
+}
+
+function renderStats(){
+  document.getElementById('stats-box').innerHTML=`
+    Current card: <strong style="color:var(--gold)">${Math.min(idx+1,MEMO_DUAS.length)} / ${MEMO_DUAS.length}</strong><br/>
+    😊 Easy: <strong style="color:#6fdea0">${stats.easy}</strong> &nbsp;
+    🙂 OK: <strong style="color:var(--gold)">${stats.ok}</strong> &nbsp;
+    😟 Hard: <strong style="color:#f08080">${stats.hard}</strong><br/>
+    Total reviewed: <strong style="color:var(--gold-light)">${stats.done}</strong>`;
+}
+
+function renderList(){
+  document.getElementById('all-list').innerHTML=MEMO_DUAS.map((d,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(201,168,76,.07);cursor:pointer" onclick="jumpTo(${i})">
+      <div style="width:22px;height:22px;border-radius:50%;background:${i<idx?'rgba(26,92,58,.3)':i===idx?'rgba(201,168,76,.3)':'rgba(255,255,255,.06)'};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:${i<idx?'#6fdea0':i===idx?'var(--gold)':'var(--text-muted)'}">${i<idx?'✓':i+1}</div>
+      <div style="font-size:.78rem;color:${i===idx?'var(--gold-light)':'var(--text-muted)'}">${d.title}</div>
+    </div>`).join('');
+}
+
+function jumpTo(i){ idx=i; renderCard(); }
+
+renderCard();
+</script>
+</body>
+</html>

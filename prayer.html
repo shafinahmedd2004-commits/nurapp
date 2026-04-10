@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Prayer Times</title>
+<link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+
+    <div class="page-header">
+      <div class="page-header-row">
+        <div><div class="page-title">🕐 Prayer Times</div><div class="page-sub">Accurate prayer times for your location</div></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input id="city-in" type="text" placeholder="Enter city..." style="width:180px" onkeydown="if(event.key==='Enter')searchCity()"/>
+          <button class="btn-gold btn-sm" onclick="searchCity()">Search</button>
+          <button class="btn-outline btn-sm" onclick="detectLocation()">📍 Auto-detect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Country quick tabs -->
+    <div style="display:flex;gap:7px;overflow-x:auto;margin-bottom:20px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none" id="country-tabs">
+      <button class="btn-icon ctab" id="ctab-bd"  onclick="setCountry('Bangladesh',23.8103,90.4125,6,'bd','karachi')"  style="flex-shrink:0;white-space:nowrap">🇧🇩 Bangladesh</button>
+      <button class="btn-icon ctab" id="ctab-jp"  onclick="setCountry('Tokyo, Japan',35.6762,139.6503,9,'jp')"   style="flex-shrink:0;white-space:nowrap">🇯🇵 Japan</button>
+      <button class="btn-icon ctab" id="ctab-us"  onclick="setCountry('New York, USA',40.7128,-74.006,-5,'us')" style="flex-shrink:0;white-space:nowrap">🇺🇸 USA</button>
+      <button class="btn-icon ctab" id="ctab-de"  onclick="setCountry('Berlin, Germany',52.52,13.405,1,'de')"   style="flex-shrink:0;white-space:nowrap">🇩🇪 Germany</button>
+      <button class="btn-icon ctab" id="ctab-it"  onclick="setCountry('Rome, Italy',41.9028,12.4964,1,'it')"    style="flex-shrink:0;white-space:nowrap">🇮🇹 Italy</button>
+      <button class="btn-icon ctab" id="ctab-cn"  onclick="setCountry('Beijing, China',39.9042,116.4074,8,'cn')" style="flex-shrink:0;white-space:nowrap">🇨🇳 China</button>
+      <button class="btn-icon ctab" id="ctab-au"  onclick="setCountry('Sydney, Australia',-33.8688,151.2093,10,'au','mwl')" style="flex-shrink:0;white-space:nowrap">🇦🇺 Australia</button>
+      <button class="btn-icon ctab" id="ctab-auto" onclick="detectLocation()" style="flex-shrink:0;white-space:nowrap">📍 My Location</button>
+    </div>
+
+    <!-- Countdown -->
+    <div class="card" style="margin-bottom:24px;text-align:center;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border-color:rgba(201,168,76,.28)">
+      <div style="font-size:.72rem;letter-spacing:3px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">NEXT PRAYER</div>
+      <div style="font-family:'Cinzel',serif;font-size:3rem;color:var(--gold)" id="cd-timer">--:--:--</div>
+      <div style="font-size:.9rem;color:var(--gold-light);margin-top:5px" id="cd-name">Calculating...</div>
+      <div style="font-size:.75rem;color:rgba(201,168,76,.6);margin-top:4px" id="cd-localtime"></div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px" id="cd-city"></div>
+    </div>
+
+    <!-- Prayer list -->
+    <div id="prayer-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px"></div>
+
+
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">🕌 Calculation Method</div>
+        <div style="font-size:.84rem;color:var(--text-muted);line-height:1.9" id="method-info">
+          <strong style="color:var(--gold-light)">Karachi (Hanafi)</strong><br/>
+          Fajr: 18° · Isha: 18°<br/>
+          Asr: Hanafi (shadow = 2× object height)
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📅 Hijri Date</div>
+        <div style="font-family:'Noto Naskh Arabic',serif;font-size:2rem;color:var(--gold);direction:rtl;margin-bottom:6px" id="hijri-disp"></div>
+        <div style="font-size:.84rem;color:var(--text-muted)" id="hijri-en-disp"></div>
+        <hr/>
+        <div style="font-size:.8rem;color:var(--text-muted);line-height:1.8">
+          Fajr الفجر · Dhuhr الظهر · Asr العصر<br/>
+          Maghrib المغرب · Isha العشاء
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('prayer.html');
+const hd = getHijriStr();
+document.getElementById('hijri-disp').textContent = hd.ar;
+document.getElementById('hijri-en-disp').textContent = hd.en + ' · ' + new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// State — tz is the UTC offset in hours (number), null = use browser local
+let _lat = 23.8103, _lng = 90.4125, _city = 'Dhaka, Bangladesh', _tz = 6, _method = 'karachi';
+let _cdInterval;
+
+function highlightTab(tabId){
+  document.querySelectorAll('.ctab').forEach(b=>{
+    b.style.background=''; b.style.borderColor=''; b.style.color='';
+  });
+  if(tabId){
+    const tab = document.getElementById('ctab-'+tabId);
+    if(tab){ tab.style.background='rgba(201,168,76,.2)'; tab.style.borderColor='rgba(201,168,76,.5)'; tab.style.color='var(--gold)'; }
+  }
+}
+
+// setCountry(name, lat, lng, tz, tabId)
+function setCountry(name, lat, lng, tz, tabId, method='mwl'){
+  _lat=lat; _lng=lng; _city=name; _tz=tz; _method=method;
+  _activeTZ = tz;
+  highlightTab(tabId);
+  renderPrayers();
+  startCountdown();
+  showToast('Loaded: '+name);
+}
+
+function renderPrayers(){
+  const all   = calcPrayerTimes(_lat, _lng, _tz, _method);
+  const main  = all.filter(p => !p.name.startsWith('_'));
+  const five  = main.filter(p => p.name !== 'Sunrise');
+  const nextP = getNextPrayer(five);
+  const now   = new Date();
+  document.getElementById('cd-city').textContent = '📍 ' + _city;
+  // Update method info
+  const mi = document.getElementById('method-info');
+  if(mi) mi.innerHTML = _method === 'mwl'
+    ? '<strong style="color:var(--gold-light)">Muslim World League (Hanafi)</strong><br/>Fajr: 18° · Isha: 17°<br/>Asr: Hanafi (shadow = 2× object height)'
+    : '<strong style="color:var(--gold-light)">Karachi (Hanafi)</strong><br/>Fajr: 18° · Isha: 18°<br/>Asr: Hanafi (shadow = 2× object height)';
+  const activeWaqt = five.find(p => now >= p.time && now < p.end) || null;
+
+  // Get forbidden times and insert them at the correct chronological position
+  const forbidden = all.filter(p=>p.name.startsWith('_forbidden'));
+
+  // Build a combined sorted list of prayers + forbidden windows
+  // Each forbidden time has a .start; each prayer has a .time
+  const combined = [
+    ...main.map(p=>({...p, sortTime: p.time, isForbidden:false})),
+    ...forbidden.map(f=>({...f, sortTime: f.start, isForbidden:true}))
+  ].sort((a,b)=> a.sortTime - b.sortTime);
+
+  document.getElementById('prayer-list').innerHTML = combined.map(item => {
+    // ── Forbidden time row ─────────────────────────────────────────────
+    if(item.isForbidden){
+      const isNow = now>=item.start && now<item.end;
+      const desc = item.label.includes('Sunrise') ? 'No nafl — ~15 min after sunrise'
+                 : item.label.includes('Noon')    ? 'No nafl — ~5 min before Dhuhr'
+                 :                                  'No nafl — ~15 min before Maghrib';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-radius:10px;background:${isNow?'rgba(122,26,26,.22)':'rgba(122,26,26,.07)'};border:1px solid ${isNow?'rgba(122,26,26,.55)':'rgba(122,26,26,.2)'};gap:10px;margin:2px 0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:1rem;width:50px;text-align:center;flex-shrink:0">🚫</div>
+          <div>
+            <div style="font-size:.82rem;color:#f08080;font-weight:600">${item.label.replace('🚫 ','')}${isNow?' <span style="font-size:.66rem;background:rgba(122,26,26,.4);padding:1px 7px;border-radius:10px">NOW</span>':''}</div>
+            <div style="font-size:.68rem;color:var(--text-muted);margin-top:1px">${desc}</div>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:.88rem;color:#f08080;font-family:'Cinzel',serif">${fmt12(item.start)}</div>
+          <div style="font-size:.66rem;color:var(--text-muted)">until ${fmt12(item.end)}</div>
+        </div>
+      </div>`;
+    }
+
+    // ── Prayer row ─────────────────────────────────────────────────────
+    const p = item;
+    const isSunrise = p.name === 'Sunrise';
+    const isNext    = !isSunrise && nextP && p.name === nextP.name;
+    const isActive  = !isSunrise && activeWaqt && p.name === activeWaqt.name;
+
+    const bg     = isActive  ? 'linear-gradient(135deg,rgba(26,92,58,.2),rgba(26,92,58,.06))'
+                 : isNext    ? 'linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.04))'
+                 : isSunrise ? 'rgba(122,26,26,.06)'
+                 : 'rgba(255,255,255,.03)';
+    const border = isActive  ? 'rgba(26,92,58,.5)'
+                 : isNext    ? 'rgba(201,168,76,.38)'
+                 : isSunrise ? 'rgba(122,26,26,.3)'
+                 : 'rgba(201,168,76,.1)';
+    const nameCol= isActive  ? '#6fdea0'
+                 : isNext    ? 'var(--gold-light)'
+                 : isSunrise ? '#f08080'
+                 : 'var(--text-light)';
+    const badge  = isActive ? '<span class="badge badge-green" style="margin-left:8px">🟢 Active</span>'
+                 : isNext   ? '<span class="badge badge-gold"  style="margin-left:8px">Next</span>'
+                 : '';
+
+    let progressBar = '';
+    if(isActive && p.end){
+      const pct=Math.min(((now-p.time)/(p.end-p.time))*100,100);
+      const rem=p.end-now, rh=Math.floor(rem/3600000), rm=Math.floor((rem%3600000)/60000);
+      progressBar=`<div style="margin-top:9px">
+        <div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--text-muted);margin-bottom:3px">
+          <span>Elapsed</span><span style="color:#6fdea0">${rh}h ${rm}m left</span>
+        </div>
+        <div style="height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,#2a7a50,#6fdea0);border-radius:2px"></div>
+        </div></div>`;
+    }
+
+    let dur='';
+    if(!isSunrise && p.end){
+      const ms=p.end-p.time, dh=Math.floor(ms/3600000), dm=Math.floor((ms%3600000)/60000);
+      dur=dh>0?`${dh}h ${dm}m`:`${dm}m`;
+    }
+
+    return `<div style="padding:14px 18px;border-radius:12px;background:${bg};border:1px solid ${border}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'Noto Naskh Arabic',serif;font-size:1.25rem;color:${nameCol};width:48px;text-align:right;flex-shrink:0">${p.ar}</div>
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:.93rem;color:${nameCol};display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+              ${isSunrise?'🌅':''} ${p.name}${badge}
+            </div>
+            ${isSunrise
+              ? `<div style="font-size:.68rem;color:#f08080;margin-top:2px">Nafl prayer not valid at this time</div>`
+              : p.end ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px">Ends ${fmt12(p.end)} · ${p.endLabel}${dur?' · '+dur+' waqt':''}</div>` : ''
+            }
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:${isActive?'#6fdea0':isNext?'var(--gold)':nameCol}">${fmt12(p.time)}</div>
+          ${!isSunrise&&p.end?`<div style="font-size:.7rem;color:var(--text-muted)">until ${fmt12(p.end)}</div>`:''}
+        </div>
+      </div>${progressBar}
+    </div>`;
+  }).join('');
+}
+
+function startCountdown(){
+  clearInterval(_cdInterval);
+  // Cache prayer list — recalculate only every 60s, not every second
+  let _pCache=null, _pCacheTime=0;
+  function getPrayers(){
+    const now=Date.now();
+    if(!_pCache||now-_pCacheTime>60000){
+      _pCache=calcPrayerTimes(_lat,_lng,_tz,_method).filter(p=>!p.name.startsWith('_')&&p.name!=='Sunrise');
+      _pCacheTime=now;
+    }
+    return _pCache;
+  }
+  function tick(){
+    const next=getNextPrayer(getPrayers());
+    if(!next) return;
+    const diff=next.time-new Date(), abs=Math.abs(diff);
+    const hh=Math.floor(abs/3600000),mm=Math.floor((abs%3600000)/60000),ss=Math.floor((abs%60000)/1000);
+    document.getElementById('cd-timer').textContent=
+      String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+    document.getElementById('cd-name').textContent='Until '+next.name+' · '+fmt12(next.time);
+    if(_tz!==null){
+      const loc=new Date(Date.now()+_tz*3600000);
+      const lh=loc.getUTCHours(),lm=loc.getUTCMinutes(),ls=loc.getUTCSeconds();
+      const la=lh>=12?'PM':'AM',lhd=lh%12||12;
+      document.getElementById('cd-localtime').textContent=
+        'Local: '+lhd+':'+String(lm).padStart(2,'0')+':'+String(ls).padStart(2,'0')+' '+la+' (UTC'+((_tz>=0)?'+':'')+_tz+')';
+    } else {
+      document.getElementById('cd-localtime').textContent='';
+    }
+  }
+  tick();
+  _cdInterval=setInterval(tick,1000);
+}
+
+function detectLocation(){
+  if(!navigator.geolocation){ showToast('Geolocation not supported'); return; }
+  showToast('Detecting location...');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    _lat = pos.coords.latitude;
+    _lng = pos.coords.longitude;
+    _tz  = null;
+    _activeTZ = null;
+    _method = 'mwl'; // default; will be updated by reverse geocode
+    _city = `${_lat.toFixed(3)}°, ${_lng.toFixed(3)}°`;
+    // Reverse geocode to determine country
+    try{
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${_lat}&lon=${_lng}&format=json&addressdetails=1`);
+      const d = await r.json();
+      if(d && d.address){
+        const cc    = (d.address.country_code||'').toLowerCase();
+        const state = d.address.state || d.address.region || '';
+        const res   = getMethodAndTZForCountry(cc, state);
+        _method     = res.method;
+        _tz         = res.tz;
+        _activeTZ   = res.tz;
+        _city       = (d.display_name||'').split(',').slice(0,2).join(', ');
+      }
+    } catch(e){ /* silent fail — use defaults */ }
+    highlightTab('auto');
+    renderPrayers();
+    startCountdown();
+    showToast('Location detected ✓');
+  }, ()=>{
+    showToast('Could not get location — using Dhaka default');
+  });
+}
+
+// Countries using Karachi method (Fajr 18°, Isha 18°)
+// All others use MWL (Fajr 18°, Isha 17°)
+const KARACHI_COUNTRIES = ['bangladesh','bd'];
+
+// Map country code → standard UTC offset (non-DST)
+const COUNTRY_TZ_MAP = {
+  'au':10,'au-wa':8,'au-sa':9.5,'au-nsw':10,'au-vic':10,'au-qld':10,'au-tas':10,'au-act':10,'au-nt':9.5,
+  'jp':9,'us':-5,'de':1,'it':1,'cn':8,'bd':6,'gb':0,'fr':1,'sa':3,'ae':4,
+  'pk':5,'in':5.5,'my':8,'id':7,'tr':3,'eg':2,'ng':1,'gh':0,'za':2,
+  'ca':-5,'br':-3,'mx':-6,'ar':-3,'nz':12,'sg':8,'th':7,'ph':8,'kr':9,'kw':3,'qa':3,'bh':3,'om':4,'jo':3,'lb':2,'iq':3,'ir':3.5,'ma':1,'tn':1,'dz':1,'ly':2,'sd':3,'so':3,'et':3,'tz':3,'ke':3,'ug':3,'cm':1,'sn':0,'ml':0,'gm':0,'gn':0,'bf':0,'ci':0,'gh':0,'tg':0,'bj':0,'ne':1,'td':1
+};
+
+function getMethodAndTZForCountry(countryCode, stateName){
+  const cc = (countryCode||'').toLowerCase();
+  const method = KARACHI_COUNTRIES.includes(cc) ? 'karachi' : 'mwl';
+  // For Australia, state determines timezone
+  let tz = null;
+  if(cc==='au'){
+    const s=(stateName||'').toLowerCase();
+    if(s.includes('western'))   tz=8;
+    else if(s.includes('south')||s.includes('darwin')||s.includes('northern')) tz=9.5;
+    else if(s.includes('queensland')) tz=10;
+    else tz=10; // default east coast
+  } else {
+    tz = COUNTRY_TZ_MAP[cc] || null;
+  }
+  return {method, tz};
+}
+
+async function searchCity(){
+  const q = document.getElementById('city-in').value.trim();
+  if(!q) return;
+  try{
+    // Use address details to get country code
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&addressdetails=1`);
+    const d = await r.json();
+    if(d.length){
+      _lat = parseFloat(d[0].lat);
+      _lng = parseFloat(d[0].lon);
+      // Determine method + tz from country
+      const addr = d[0].address || {};
+      const cc   = (addr.country_code || '').toLowerCase();
+      const state= addr.state || addr.region || '';
+      const {method, tz} = getMethodAndTZForCountry(cc, state);
+      _method   = method;
+      _tz       = tz;       // explicit tz if known, null = browser tz fallback
+      _activeTZ = tz;
+      _city = (d[0].display_name||'').split(',').slice(0,2).join(', ');
+      document.querySelectorAll('.ctab').forEach(b=>{b.style.background='';b.style.borderColor='';b.style.color='';});
+      renderPrayers(); startCountdown();
+      showToast('Loaded: '+_city+' ['+method.toUpperCase()+']');
+    } else showToast('City not found');
+  } catch(e){ showToast('Search error – check connection'); }
+}
+
+// Boot: show Bangladesh by default, then check geolocation permission
+setCountry('Dhaka, Bangladesh', 23.8103, 90.4125, 6, 'bd', 'karachi');
+
+// Check permission state without triggering a prompt
+if(navigator.permissions){
+  navigator.permissions.query({name:'geolocation'}).then(r=>{
+    if(r.state==='granted') detectLocation();
+    // if 'prompt' or 'denied' — user must tap the button
+  }).catch(()=>{ /* permissions API not supported — don't auto-request */ });
+}
+// If permissions API not available, don't auto-request either
+</script>
+</body>
+</html>

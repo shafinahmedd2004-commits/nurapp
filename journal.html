@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Dua Journal</title>
+<link rel="stylesheet" href="main.css"/>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header"><div class="page-title">📓 Personal Dua Journal</div><div class="page-sub">Record your duas, intentions, and answered prayers</div></div>
+
+    <!-- Add entry -->
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">✍️ New Entry</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group"><label>Your Dua</label><textarea id="j-text" rows="4" placeholder="Write your personal dua here... ask Allah for anything in your heart 🤲"></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label>Category</label>
+            <select id="j-tag">
+              <option>Health</option><option>Family</option><option>Guidance</option>
+              <option>Forgiveness</option><option>Rizq (Provision)</option><option>Marriage</option>
+              <option>Studies / Career</option><option>Protection</option><option>Gratitude</option><option>General</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Status</label>
+            <select id="j-status">
+              <option>Pending 🤲</option><option>Answered ✅ Alhamdulillah</option><option>In Progress 🔄</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-gold" style="width:fit-content" onclick="addEntry()">Save Dua 🤲</button>
+      </div>
+    </div>
+
+    <!-- Filter row -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
+      <input id="j-search" type="text" placeholder="Search duas..." style="max-width:240px" oninput="renderEntries()"/>
+      <select id="j-filter" onchange="renderEntries()" style="width:auto">
+        <option value="">All categories</option>
+        <option>Health</option><option>Family</option><option>Guidance</option><option>Forgiveness</option>
+        <option>Rizq (Provision)</option><option>Marriage</option><option>Studies / Career</option>
+        <option>Protection</option><option>Gratitude</option><option>General</option>
+      </select>
+    </div>
+
+    <div id="entries-list"></div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('journal.html');
+
+let entries = JSON.parse(localStorage.getItem('nur-journal')||'[]');
+
+function addEntry(){
+  const text = document.getElementById('j-text').value.trim();
+  if(!text){ showToast('Please write your dua'); return; }
+  entries.unshift({
+    id:Date.now(),
+    text,
+    tag:document.getElementById('j-tag').value,
+    status:document.getElementById('j-status').value,
+    date:new Date().toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'}),
+    time:new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+  });
+  save();
+  document.getElementById('j-text').value='';
+  showToast('Dua saved 🤲');
+  renderEntries();
+}
+
+function save(){ localStorage.setItem('nur-journal',JSON.stringify(entries)); }
+
+function deleteEntry(id){ if(!confirm('Delete this dua?')) return; entries=entries.filter(e=>e.id!==id); save(); renderEntries(); }
+
+function toggleStatus(id){
+  const e=entries.find(e=>e.id===id); if(!e) return;
+  const opts=['Pending 🤲','In Progress 🔄','Answered ✅ Alhamdulillah'];
+  const cur=opts.indexOf(e.status);
+  e.status=opts[(cur+1)%opts.length];
+  save(); renderEntries();
+}
+
+function renderEntries(){
+  const q=document.getElementById('j-search').value.toLowerCase();
+  const f=document.getElementById('j-filter').value;
+  const filtered=entries.filter(e=>(f?e.tag===f:true)&&(q?e.text.toLowerCase().includes(q):true));
+  if(!filtered.length){
+    document.getElementById('entries-list').innerHTML='<div style="color:var(--text-muted);text-align:center;padding:40px">No duas found. Start journaling above. 🤲</div>';
+    return;
+  }
+  const statusColor=(s)=>s.includes('✅')?'rgba(26,92,58,.25)':s.includes('🔄')?'rgba(23,64,94,.25)':'rgba(201,168,76,.12)';
+  const statusBorder=(s)=>s.includes('✅')?'rgba(26,92,58,.5)':s.includes('🔄')?'rgba(23,64,94,.5)':'rgba(201,168,76,.3)';
+  document.getElementById('entries-list').innerHTML=filtered.map(e=>`
+    <div class="journal-entry">
+      <div class="je-meta">
+        <span style="font-size:.7rem;color:var(--text-muted)">${e.date} · ${e.time||''}</span>
+        <span class="badge" style="background:rgba(201,168,76,.1);color:var(--gold);border-color:rgba(201,168,76,.25)">${e.tag}</span>
+        <span class="badge" style="cursor:pointer;background:${statusColor(e.status)};color:var(--text-light);border-color:${statusBorder(e.status)}" onclick="toggleStatus(${e.id})">${e.status}</span>
+      </div>
+      <div class="je-text">${e.text}</div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn-icon" onclick="copyText(\`${e.text.replace(/`/g,'\\`')}\`)">📋 Copy</button>
+        <button class="btn-icon" style="color:#f08080;border-color:rgba(122,26,26,.4)" onclick="deleteEntry(${e.id})">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+renderEntries();
+</script>
+</body>
+</html>

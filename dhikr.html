@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Dhikr Counter</title>
+<link rel="stylesheet" href="main.css"/>
+<style>
+.dhikr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.dp{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.12);border-radius:11px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;}
+.dp:hover{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.28);}
+.dp.sel{background:rgba(201,168,76,.15);border-color:rgba(201,168,76,.42);}
+.dp-ar{font-family:'Noto Naskh Arabic',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:4px;}
+.dp-rom{font-size:.72rem;color:var(--gold);margin-bottom:3px;}
+.dp-en{font-size:.72rem;color:var(--text-muted);}
+.dp-tgt{font-size:.68rem;color:rgba(201,168,76,.6);margin-top:4px;}
+.progress-ring-circle{transition:stroke-dashoffset .2s ease;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header"><div class="page-title">📿 Dhikr Counter</div><div class="page-sub">Count your remembrance of Allah</div></div>
+
+    <div class="g2">
+      <!-- Counter -->
+      <div>
+        <div class="card" style="text-align:center;padding:36px 24px">
+          <div style="font-family:'Noto Naskh Arabic',serif;font-size:2.2rem;color:var(--gold-light);margin-bottom:4px" id="d-ar">سُبْحَانَ اللَّهِ</div>
+          <div style="font-size:.82rem;color:var(--gold);margin-bottom:2px" id="d-rom">SubhanAllah</div>
+          <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:28px" id="d-en">Glory be to Allah</div>
+
+          <!-- SVG ring -->
+          <div style="position:relative;width:220px;height:220px;margin:0 auto 24px">
+            <svg width="220" height="220" viewBox="0 0 220 220">
+              <circle cx="110" cy="110" r="100" fill="none" stroke="rgba(201,168,76,0.1)" stroke-width="8"/>
+              <circle id="prog-ring" cx="110" cy="110" r="100" fill="none" stroke="var(--gold)" stroke-width="8"
+                stroke-dasharray="628" stroke-dashoffset="628" stroke-linecap="round"
+                transform="rotate(-90 110 110)" class="progress-ring-circle"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer" onclick="increment()" id="ring-click">
+              <div style="font-family:'Cinzel',serif;font-size:3.6rem;color:var(--gold);line-height:1" id="count-num">0</div>
+              <div style="font-size:.62rem;color:var(--text-muted);letter-spacing:2px;margin-top:4px">TAP TO COUNT</div>
+            </div>
+          </div>
+
+          <div style="font-size:.82rem;color:var(--text-muted);margin-bottom:20px">
+            Target: <strong style="color:var(--gold)" id="tgt-txt">33</strong> ·
+            Remaining: <strong style="color:var(--gold-light)" id="rem-txt">33</strong>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn-outline btn-sm" onclick="reset()">↺ Reset</button>
+            <button class="btn-gold btn-sm" onclick="nextDhikr()">Next Dhikr ›</button>
+            <button class="btn-outline btn-sm" onclick="undoOne()">⌫ Undo</button>
+          </div>
+
+          <div id="complete-msg" style="display:none;margin-top:20px;background:rgba(26,92,58,.2);border:1px solid rgba(26,92,58,.4);border-radius:10px;padding:14px;color:#6fdea0;font-size:.88rem">
+            ✅ Mashaa Allah! Target completed! Tap to continue or press Next.
+          </div>
+        </div>
+
+        <!-- Session log -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📊 Session Stats</div>
+          <div id="session-stats" style="font-size:.84rem;color:var(--text-muted);line-height:1.9">
+            Total counts: <strong style="color:var(--gold)" id="st-total">0</strong><br/>
+            Dhikrs completed: <strong style="color:var(--gold)" id="st-complete">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dhikr selector -->
+      <div>
+        <div class="card">
+          <div class="card-title">Choose Dhikr</div>
+          <div class="dhikr-grid" id="dhikr-grid"></div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">✏️ Custom Dhikr</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="form-group"><label>Arabic / Text</label><input id="cust-ar" type="text" placeholder="e.g. اللهم صل على محمد"/></div>
+            <div class="form-group"><label>Transliteration</label><input id="cust-rom" type="text" placeholder="e.g. Allahumma salli ala Muhammad"/></div>
+            <div class="form-group"><label>Target count</label><input id="cust-tgt" type="number" value="33" min="1"/></div>
+            <button class="btn-gold btn-sm" onclick="addCustom()" style="width:fit-content">Add Dhikr</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('dhikr.html');
+
+let allDhikrs = [...DHIKRS];
+let selIdx=0, count=0, sessionTotal=0, sessionComplete=0;
+
+function renderGrid(){
+  document.getElementById('dhikr-grid').innerHTML = allDhikrs.map((d,i)=>`
+    <div class="dp ${i===selIdx?'sel':''}" onclick="select(${i})">
+      <div class="dp-ar">${d.ar}</div>
+      <div class="dp-rom">${d.rom}</div>
+      <div class="dp-en">${d.en}</div>
+      <div class="dp-tgt">Target: ×${d.target}</div>
+    </div>`).join('');
+}
+
+function select(i){
+  selIdx=i; count=0;
+  const d=allDhikrs[i];
+  document.getElementById('d-ar').textContent=d.ar;
+  document.getElementById('d-rom').textContent=d.rom;
+  document.getElementById('d-en').textContent=d.en;
+  document.getElementById('tgt-txt').textContent=d.target;
+  document.getElementById('rem-txt').textContent=d.target;
+  document.getElementById('count-num').textContent=0;
+  document.getElementById('complete-msg').style.display='none';
+  updateRing(); renderGrid();
+}
+
+function increment(){
+  count++;
+  sessionTotal++;
+  const tgt=allDhikrs[selIdx].target;
+  if(count===tgt){ document.getElementById('complete-msg').style.display='block'; sessionComplete++; document.getElementById('st-complete').textContent=sessionComplete; }
+  document.getElementById('count-num').textContent=count;
+  document.getElementById('rem-txt').textContent=Math.max(tgt-count,0);
+  document.getElementById('st-total').textContent=sessionTotal;
+  updateRing();
+}
+
+function undoOne(){ if(count>0){count--;sessionTotal=Math.max(0,sessionTotal-1);document.getElementById('count-num').textContent=count;document.getElementById('rem-txt').textContent=Math.max(allDhikrs[selIdx].target-count,0);document.getElementById('st-total').textContent=sessionTotal;document.getElementById('complete-msg').style.display='none';updateRing();} }
+
+function reset(){ count=0; document.getElementById('count-num').textContent=0; document.getElementById('rem-txt').textContent=allDhikrs[selIdx].target; document.getElementById('complete-msg').style.display='none'; updateRing(); }
+
+function nextDhikr(){ select((selIdx+1)%allDhikrs.length); }
+
+function updateRing(){
+  const tgt=allDhikrs[selIdx].target;
+  const pct=Math.min(count/tgt,1);
+  const circ=628;
+  document.getElementById('prog-ring').style.strokeDashoffset=circ-(pct*circ);
+}
+
+function addCustom(){
+  const ar=document.getElementById('cust-ar').value.trim();
+  const rom=document.getElementById('cust-rom').value.trim();
+  const tgt=parseInt(document.getElementById('cust-tgt').value)||33;
+  if(!ar) return showToast('Enter dhikr text');
+  allDhikrs.push({ar,rom,en:'Custom Dhikr',target:tgt});
+  renderGrid();
+  showToast('Custom dhikr added ✓');
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='Enter'){e.preventDefault();increment();} });
+
+renderGrid(); select(0);
+</script>
+</body>
+</html>

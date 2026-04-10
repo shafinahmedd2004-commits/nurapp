@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Hadith Explorer</title>
+<link rel="stylesheet" href="main.css"/>
+<style>
+/* ── Language tab strip ── */
+.lang-strip{
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:10px 14px;
+  background:rgba(201,168,76,.04);
+  border:1px solid rgba(201,168,76,.12);
+  border-radius:10px;
+  margin-bottom:18px;
+  align-items:center;
+}
+.lang-strip-label{
+  font-size:.6rem;letter-spacing:2px;color:rgba(138,122,90,.55);
+  text-transform:uppercase;margin-right:4px;white-space:nowrap;
+  flex-shrink:0;
+}
+.ltab{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(201,168,76,.14);
+  border-radius:7px;padding:5px 12px;
+  cursor:pointer;font-size:.76rem;
+  color:var(--text-muted);
+  transition:all .18s;
+  font-family:'Lato',sans-serif;
+  white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.ltab:hover{ color:var(--text-light); }
+.ltab.active{
+  background:rgba(201,168,76,.16);
+  border-color:rgba(201,168,76,.42);
+  color:var(--gold-light);
+  font-weight:700;
+}
+.show-toggles{
+  margin-left:auto;display:flex;gap:6px;flex-shrink:0;
+}
+.tog{
+  background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.14);
+  border-radius:6px;padding:4px 11px;cursor:pointer;font-size:.74rem;
+  color:var(--text-muted);font-family:'Lato',sans-serif;transition:all .15s;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.tog.on{
+  background:rgba(201,168,76,.13);
+  border-color:rgba(201,168,76,.35);
+  color:var(--gold);
+}
+
+/* ── Hadith cards ── */
+.hadith-card{
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(201,168,76,.1);
+  border-radius:14px;padding:20px 22px;
+  margin-bottom:14px;transition:border .2s;
+}
+.hadith-card:hover{ border-color:rgba(201,168,76,.22); }
+
+.h-arabic{
+  font-family:'Noto Naskh Arabic',serif;
+  font-size:1.55rem;color:var(--gold-light);
+  direction:rtl;text-align:right;line-height:2.3;
+  margin-bottom:14px;padding-bottom:14px;
+  border-bottom:1px solid rgba(201,168,76,.1);
+}
+.h-translation{
+  font-size:.88rem;color:var(--text-light);
+  line-height:1.9;margin-bottom:6px;
+}
+.h-translation.rtl-lang{
+  font-family:'Noto Naskh Arabic',serif;
+  font-size:1.15rem;direction:rtl;text-align:right;line-height:2.1;
+}
+.h-translation.muted-en{
+  font-size:.8rem;color:var(--text-muted);margin-top:8px;
+  padding-top:8px;border-top:1px solid rgba(201,168,76,.07);
+}
+.h-loading-tr{
+  font-size:.78rem;color:var(--text-muted);font-style:italic;margin-bottom:6px;
+}
+
+@media(max-width:640px){
+  .lang-strip{ gap:5px; padding:8px 10px; }
+  .ltab{ font-size:.72rem; padding:5px 9px; }
+  .show-toggles{ margin-left:0; margin-top:4px; }
+  .lang-strip{ flex-wrap:wrap; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title">📜 Hadith Explorer</div>
+      <div class="page-sub">Thousands of authentic hadiths · Arabic + 8 language translations</div>
+    </div>
+
+    <!-- Mode tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <button class="btn-gold btn-sm"    id="tab-browse" onclick="setMode('browse')">📚 Browse Collections</button>
+      <button class="btn-outline btn-sm" id="tab-local"  onclick="setMode('local')">🏷️ By Topic</button>
+      <button class="btn-outline btn-sm" onclick="showRandom()">🎲 Random</button>
+    </div>
+
+    <!-- ── BROWSE MODE ── -->
+    <div id="mode-browse">
+
+      <!-- Collection + page controls -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end">
+        <div class="form-group" style="flex:1;min-width:180px">
+          <label>Collection</label>
+          <select id="api-collection" onchange="onCollectionChange()">
+            <option value="sahih-bukhari">Sahih al-Bukhari (7,563 hadiths)</option>
+            <option value="sahih-muslim">Sahih Muslim (7,453 hadiths)</option>
+            <option value="abu-dawood">Sunan Abu Dawud (5,274 hadiths)</option>
+            <option value="ibn-e-majah">Sunan Ibn Majah (4,341 hadiths)</option>
+            <option value="tirmizi">Jami at-Tirmidhi (3,956 hadiths)</option>
+            <option value="nasai">Sunan an-Nasa'i (5,758 hadiths)</option>
+          </select>
+        </div>
+        <div class="form-group" style="min-width:110px">
+          <label>Page (10/page)</label>
+          <input type="number" id="api-page" value="1" min="1" style="width:80px"
+            onchange="if(this.value<1)this.value=1; loadCollection()"/>
+        </div>
+        <button class="btn-outline btn-sm" onclick="changePage(-1)">‹ Prev</button>
+        <button class="btn-outline btn-sm" onclick="changePage(1)">Next ›</button>
+      </div>
+
+      <!-- Language + visibility strip -->
+      <div class="lang-strip">
+        <span class="lang-strip-label">Translation:</span>
+        <div id="lang-tabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div class="show-toggles">
+          <button class="tog on" id="tog-ar"    onclick="toggleSection('ar',this)">Arabic</button>
+          <button class="tog on" id="tog-trans" onclick="toggleSection('trans',this)">Translation</button>
+        </div>
+      </div>
+
+      <div id="api-status" style="font-size:.78rem;color:var(--text-muted);margin-bottom:12px"></div>
+      <div id="api-display"></div>
+      <div id="api-pager" style="display:flex;gap:8px;justify-content:center;margin-top:18px;flex-wrap:wrap"></div>
+    </div>
+
+    <!-- ── TOPIC MODE (local hadiths) ── -->
+    <div id="mode-local" style="display:none">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:flex-end">
+        <div class="form-group" style="flex:1;min-width:160px">
+          <label>Topic</label>
+          <select id="h-topic" onchange="applyFilter()">
+            <option value="">All Topics</option>
+            <option>Intention</option><option>Sincerity</option><option>Quran</option>
+            <option>Salah</option><option>Fasting</option><option>Ramadan</option>
+            <option>Charity</option><option>Knowledge</option><option>Character</option>
+            <option>Brotherhood</option><option>Speech</option><option>Parents</option>
+            <option>Family</option><option>Repentance</option><option>Gratitude</option>
+            <option>Worship</option><option>Purification</option><option>Tawakkul</option>
+            <option>Dunya</option><option>Dhikr</option><option>Justice</option>
+            <option>Health</option><option>Ease in Religion</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>Grade</label>
+          <select id="h-grade" onchange="applyFilter()">
+            <option value="">All</option>
+            <option>Sahih</option><option>Hasan</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:2;min-width:180px">
+          <label>Search</label>
+          <input id="h-search" type="text" placeholder="Search text…" oninput="applyFilter()"/>
+        </div>
+      </div>
+      <div id="local-display"></div>
+      <div id="local-pager" style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap"></div>
+    </div>
+
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('hadith.html');
+
+const uiLang = getUILang();
+let currentMode = 'browse';
+
+// ── Mode switch ───────────────────────────────────────────────────────────
+function setMode(mode){
+  currentMode = mode;
+  document.getElementById('mode-browse').style.display = mode==='browse' ? '' : 'none';
+  document.getElementById('mode-local').style.display  = mode==='local'  ? '' : 'none';
+  document.getElementById('tab-browse').className = mode==='browse' ? 'btn-gold btn-sm' : 'btn-outline btn-sm';
+  document.getElementById('tab-local').className  = mode==='local'  ? 'btn-gold btn-sm' : 'btn-outline btn-sm';
+  if(mode==='local') applyFilter();
+}
+
+// ── Language definitions ──────────────────────────────────────────────────
+// CDN pattern: https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/{code}-{col}.json
+const LANGS = [
+  {code:'eng', label:'🇬🇧 English',   rtl:false},
+  {code:'ben', label:'🇧🇩 বাংলা',    rtl:false},
+  {code:'ara', label:'🕌 العربية',   rtl:true },
+  {code:'urd', label:'🇵🇰 اردو',     rtl:true },
+  {code:'tur', label:'🇹🇷 Türkçe',   rtl:false},
+  {code:'ind', label:'🇮🇩 Indonesia', rtl:false},
+  {code:'fra', label:'🇫🇷 Français',  rtl:false},
+  {code:'por', label:'🇵🇹 Português', rtl:false},
+];
+
+const COL_CDN = {
+  'sahih-bukhari':'bukhari', 'sahih-muslim':'muslim',
+  'abu-dawood':'abudawud',   'ibn-e-majah':'ibnmajah',
+  'tirmizi':'tirmidhi',      'nasai':'nasai',
+};
+const CDN_BASE = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions';
+
+// collectionCache[col][langCode] = full hadith array
+let collectionCache = {};
+let currentLang = (uiLang==='bn') ? 'ben' : 'eng';
+let showAr = true, showTrans = true;
+let apiTotal = 0;
+const PER_PAGE = 10;
+
+// ── Language tabs ─────────────────────────────────────────────────────────
+function buildLangTabs(){
+  document.getElementById('lang-tabs').innerHTML = LANGS.map(l=>`
+    <button class="ltab ${l.code===currentLang?'active':''}"
+      onclick="switchLang('${l.code}')">${l.label}</button>`).join('');
+}
+buildLangTabs();
+
+function switchLang(code){
+  currentLang = code;
+  buildLangTabs();
+  loadCollection();
+}
+
+// ── Show/hide toggles ─────────────────────────────────────────────────────
+function toggleSection(what, btn){
+  if(what==='ar')    showAr    = !showAr;
+  if(what==='trans') showTrans = !showTrans;
+  btn.classList.toggle('on');
+  if(what==='ar')
+    document.querySelectorAll('.h-arabic').forEach(el=>el.style.display=showAr?'':'none');
+  if(what==='trans')
+    document.querySelectorAll('.h-translation,.h-loading-tr').forEach(el=>el.style.display=showTrans?'':'none');
+}
+
+// ── CDN fetch with cache ──────────────────────────────────────────────────
+async function fetchEdition(col, langCode){
+  if(collectionCache[col]?.[langCode]) return collectionCache[col][langCode];
+  const suffix = COL_CDN[col];
+  if(!suffix) throw new Error('Unknown collection');
+  const url = `${CDN_BASE}/${langCode}-${suffix}.json`;
+  const resp = await fetch(url);
+  if(!resp.ok) throw new Error(`${langCode} HTTP ${resp.status}`);
+  const data = await resp.json();
+  const arr = data.hadiths || data.hadith || [];
+  if(!collectionCache[col]) collectionCache[col] = {};
+  collectionCache[col][langCode] = arr;
+  return arr;
+}
+
+// ── Main loader ───────────────────────────────────────────────────────────
+async function loadCollection(){
+  const col  = document.getElementById('api-collection').value;
+  const page = parseInt(document.getElementById('api-page').value) || 1;
+
+  document.getElementById('api-display').innerHTML =
+    '<div class="loading-box"><div class="spinner"></div><p>Loading hadiths…</p></div>';
+  document.getElementById('api-status').textContent = '';
+  document.getElementById('api-pager').innerHTML = '';
+
+  try{
+    // Fetch English (always needed as reference), chosen language, and Arabic in parallel
+    const toFetch = ['eng'];
+    if(currentLang !== 'eng') toFetch.push(currentLang);
+    if(currentLang !== 'ara') toFetch.push('ara');
+
+    const results = await Promise.allSettled(toFetch.map(lc => fetchEdition(col, lc)));
+    const byCode = {};
+    toFetch.forEach((lc,i)=>{ if(results[i].status==='fulfilled') byCode[lc]=results[i].value; });
+
+    const engAll = byCode['eng'] || [];
+    if(!engAll.length) throw new Error('No data received');
+
+    apiTotal = engAll.length;
+    const totalPages = Math.max(1, Math.ceil(apiTotal / PER_PAGE));
+    const safeP = Math.min(Math.max(page,1), totalPages);
+    if(safeP !== page) document.getElementById('api-page').value = safeP;
+
+    const s = (safeP-1)*PER_PAGE;
+    const slices = {};
+    toFetch.forEach(lc=>{ slices[lc] = byCode[lc] ? byCode[lc].slice(s, s+PER_PAGE) : null; });
+
+    renderAPIHadiths(slices, col, safeP, totalPages);
+
+    // Pre-warm other popular languages silently
+    ['ben','urd'].forEach(lc=>{ if(!byCode[lc]) fetchEdition(col,lc).catch(()=>{}); });
+
+  } catch(err){
+    showLocalFallback(err.message);
+  }
+}
+
+function onCollectionChange(){
+  document.getElementById('api-page').value = 1;
+  loadCollection();
+}
+
+// ── Render hadith cards ───────────────────────────────────────────────────
+function renderAPIHadiths(slices, col, page, totalPages){
+  const engSlice = slices['eng'] || [];
+  const araSlice = slices['ara'] || null;
+  const trSlice  = (currentLang !== 'eng' && currentLang !== 'ara') ? slices[currentLang] : null;
+  const langInfo = LANGS.find(l=>l.code===currentLang) || LANGS[0];
+
+  document.getElementById('api-status').textContent =
+    `Showing ${(page-1)*PER_PAGE+1}–${Math.min(page*PER_PAGE,apiTotal)} of ${apiTotal.toLocaleString()} hadiths · Page ${page} / ${totalPages}`;
+
+  if(!engSlice.length){
+    document.getElementById('api-display').innerHTML =
+      '<div style="color:var(--text-muted);text-align:center;padding:30px">No hadiths on this page.</div>';
+    buildAPIPager(page, totalPages);
+    return;
+  }
+
+  document.getElementById('api-display').innerHTML = engSlice.map((h, i)=>{
+    const num   = h.hadithnumber || h.number || h.id || ((page-1)*PER_PAGE+i+1);
+    const enTxt = escHtml(h.text || h.english || '');
+
+    // Arabic text
+    const araH  = araSlice ? araSlice[i] : null;
+    const arTxt = araH ? (araH.text||'') : (h.arabic||h.arab||'');
+
+    // Translation for chosen language
+    let trHtml = '';
+    if(currentLang === 'eng'){
+      // Just show English
+      trHtml = `<div class="h-translation" style="display:${showTrans?'':'none'}">"${enTxt}"</div>`;
+    } else if(currentLang === 'ara'){
+      // Arabic chosen as translation — show nothing extra (Arabic already shown above)
+      trHtml = '';
+    } else {
+      // Non-English chosen
+      const trH   = trSlice ? trSlice[i] : null;
+      const trTxt = trH ? escHtml(trH.text||'') : null;
+      const rtlCls = langInfo.rtl ? ' rtl-lang' : '';
+
+      if(trTxt){
+        trHtml = `<div class="h-translation${rtlCls}" style="display:${showTrans?'':'none'}">"${trTxt}"</div>`;
+      } else {
+        trHtml = `<div class="h-loading-tr" style="display:${showTrans?'':'none'}">⏳ Loading ${langInfo.label} translation…</div>`;
+      }
+      // Always show English underneath (dimmed) for reference
+      trHtml += `<div class="h-translation muted-en" style="display:${showTrans?'':'none'}">"${enTxt}"</div>`;
+    }
+
+    // Arabic display
+    let arHtml = '';
+    if(arTxt){
+      arHtml = `<div class="h-arabic" style="display:${showAr?'':'none'}">${escHtml(arTxt)}</div>`;
+    } else {
+      // Will be patched in lazily
+      const safeCol = col.replace(/[^a-z]/g,'');
+      arHtml = `<div class="h-arabic" id="arph-${num}-${safeCol}" style="display:${showAr?'':'none'}">
+        <span style="color:var(--text-muted);font-size:.75rem;font-family:'Lato',sans-serif">⏳ Loading Arabic…</span>
+      </div>`;
+    }
+
+    return `
+    <div class="hadith-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="badge badge-green">✅ Sahih</span>
+          <span style="font-size:.72rem;color:var(--text-muted)">#${num}</span>
+          ${langInfo.code!=='eng'?`<span class="badge" style="background:rgba(201,168,76,.1);color:var(--gold);border-color:rgba(201,168,76,.25)">${langInfo.label}</span>`:''}
+        </div>
+        <button class="btn-icon" onclick="copyCurrentLang(${num},'${col}')">📋 Copy</button>
+      </div>
+      ${arHtml}
+      ${trHtml}
+      <hr style="margin:12px 0 10px"/>
+      <span style="font-size:.74rem;color:var(--text-muted)">📖 ${colLabel(col)} ${num}</span>
+    </div>`;
+  }).join('');
+
+  buildAPIPager(page, totalPages);
+
+  // Lazily patch Arabic placeholders if not yet loaded
+  if(!araSlice){
+    fetchEdition(col, 'ara').then(araAll=>{
+      const s2 = (page-1)*PER_PAGE;
+      const safeCol = col.replace(/[^a-z]/g,'');
+      araAll.slice(s2, s2+PER_PAGE).forEach((araH, i)=>{
+        const engH = (collectionCache[col]?.['eng'] || [])[s2+i];
+        const num  = engH ? (engH.hadithnumber||engH.number||engH.id||(s2+i+1)) : (s2+i+1);
+        const el   = document.getElementById(`arph-${num}-${safeCol}`);
+        if(el){
+          el.textContent = araH.text || '';
+          if(!showAr) el.style.display = 'none';
+        }
+      });
+    }).catch(()=>{});
+  }
+
+  // Lazily patch translation placeholders
+  if(currentLang !== 'eng' && currentLang !== 'ara' && !trSlice){
+    fetchEdition(col, currentLang).then(trAll=>{
+      const s2 = (page-1)*PER_PAGE;
+      const rtlCls = langInfo.rtl ? ' rtl-lang' : '';
+      document.querySelectorAll('.h-loading-tr').forEach((el, i)=>{
+        const trH = trAll[s2+i];
+        if(trH && trH.text){
+          const div = document.createElement('div');
+          div.className = `h-translation${rtlCls}`;
+          div.style.display = showTrans ? '' : 'none';
+          div.textContent = '"' + trH.text + '"';
+          el.replaceWith(div);
+        }
+      });
+    }).catch(()=>{});
+  }
+}
+
+// ── Copy in current language ──────────────────────────────────────────────
+function copyCurrentLang(num, col){
+  const colCache = collectionCache[col] || {};
+  const arr = colCache[currentLang] || colCache['eng'];
+  if(!arr){ showToast('Not loaded yet'); return; }
+  const h = arr.find(x=>(x.hadithnumber||x.number||x.id)===num);
+  copyText(h ? (h.text||'') : '');
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+function escHtml(s){
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showLocalFallback(reason){
+  document.getElementById('api-display').innerHTML = `
+    <div class="card" style="text-align:center;padding:24px">
+      <div style="font-size:1.5rem;margin-bottom:8px">📶</div>
+      <div style="font-family:'Cinzel',serif;color:var(--gold-light);margin-bottom:8px">Could Not Load Collection</div>
+      <div style="font-size:.84rem;color:var(--text-muted);margin-bottom:14px">
+        ${reason?`(${reason})<br/>`:''}Please check your internet connection, or browse our <strong>${HADITHS.length} local hadiths</strong> by topic below.
+      </div>
+      <button class="btn-gold" onclick="setMode('local')">Browse ${HADITHS.length} Local Hadiths →</button>
+    </div>`;
+}
+
+function buildAPIPager(page, totalPages){
+  let html='';
+  const delta=2;
+  for(let p=1;p<=totalPages;p++){
+    if(p===1||p===totalPages||Math.abs(p-page)<=delta){
+      html+=`<button class="btn-icon" onclick="goAPIPage(${p})" style="${p===page?'background:rgba(201,168,76,.22);color:var(--gold);border-color:rgba(201,168,76,.4)':''}">${p}</button>`;
+    } else if(Math.abs(p-page)===delta+1){
+      html+='<span style="color:var(--text-muted);padding:0 4px">…</span>';
+    }
+  }
+  document.getElementById('api-pager').innerHTML=html;
+}
+
+function colLabel(col){
+  const m={'sahih-bukhari':'Bukhari','sahih-muslim':'Muslim','abu-dawood':'Abu Dawud',
+           'ibn-e-majah':'Ibn Majah','tirmizi':'Tirmidhi','nasai':'Nasai'};
+  return m[col]||col;
+}
+
+function goAPIPage(p){
+  document.getElementById('api-page').value=p;
+  loadCollection();
+  document.getElementById('mode-browse').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function changePage(dir){
+  const inp=document.getElementById('api-page');
+  inp.value=Math.max(1,(parseInt(inp.value)||1)+dir);
+  loadCollection();
+}
+
+// ── Local / Topic mode ────────────────────────────────────────────────────
+const LOCAL_PAGE=10;
+let filtered=[...HADITHS], localPage=1;
+
+function applyFilter(){
+  const topic =(document.getElementById('h-topic').value);
+  const grade =(document.getElementById('h-grade').value);
+  const search=(document.getElementById('h-search').value||'').toLowerCase();
+  filtered=HADITHS.filter(h=>{
+    if(topic && h.topic!==topic) return false;
+    if(grade && h.grade!==grade) return false;
+    if(search && !(h.en+(h.bn||'')+h.ar).toLowerCase().includes(search)) return false;
+    return true;
+  });
+  localPage=1; renderLocal();
+}
+
+function renderLocal(){
+  const total=filtered.length, pages=Math.max(1,Math.ceil(total/LOCAL_PAGE));
+  localPage=Math.min(localPage,pages);
+  const s=(localPage-1)*LOCAL_PAGE, slice=filtered.slice(s,s+LOCAL_PAGE);
+  const gb=g=>g==='Sahih'?'badge-green':g==='Hasan'?'badge-gold':'badge-red';
+
+  document.getElementById('local-display').innerHTML = !slice.length
+    ? '<div style="color:var(--text-muted);text-align:center;padding:30px">No hadiths found.</div>'
+    : slice.map(h=>{
+        const txt=(uiLang==='bn'&&h.bn)?h.bn:h.en;
+        return `
+        <div class="hadith-card">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+            <div>
+              <span class="badge ${gb(h.grade)}" style="margin-right:6px">✅ ${h.grade}</span>
+              <span class="badge badge-blue">${h.topic}</span>
+              ${uiLang==='bn'&&h.bn?'<span class="badge" style="background:rgba(0,100,200,.15);color:#7ec8f5;border-color:rgba(0,100,200,.3);margin-left:4px">বাংলা</span>':''}
+            </div>
+            <button class="btn-icon" onclick="copyText(${JSON.stringify(txt)})">📋 Copy</button>
+          </div>
+          <div class="h-arabic">${h.ar}</div>
+          <div class="h-translation">"${escHtml(txt)}"</div>
+          <hr style="margin:10px 0"/>
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+            <span style="font-size:.74rem;color:var(--text-muted)">📖 ${h.ref}</span>
+            <span style="font-size:.74rem;color:var(--text-muted)">${h.narrator}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+  let pHtml=`<span style="font-size:.75rem;color:var(--text-muted)">${total} hadiths · Page ${localPage}/${pages}</span>`;
+  if(localPage>1) pHtml=`<button class="btn-icon" onclick="goLocal(${localPage-1})">‹</button>`+pHtml;
+  if(localPage<pages) pHtml+=`<button class="btn-icon" onclick="goLocal(${localPage+1})">›</button>`;
+  document.getElementById('local-pager').innerHTML=pHtml;
+}
+
+function goLocal(p){ localPage=p; renderLocal(); document.getElementById('local-display').scrollIntoView({behavior:'smooth',block:'start'}); }
+
+function showRandom(){
+  setMode('local');
+  filtered=[HADITHS[Math.floor(Math.random()*HADITHS.length)]];
+  localPage=1; renderLocal();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadCollection();
+</script>
+</body>
+</html>

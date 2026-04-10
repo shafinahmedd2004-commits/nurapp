@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Zakat Calculator</title>
+<link rel="stylesheet" href="main.css"/>
+<style>
+.z-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.ztab{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.14);border-radius:9px;padding:9px 18px;cursor:pointer;font-size:.82rem;color:var(--text-muted);transition:all .2s;font-family:'Lato',sans-serif;}
+.ztab.active{background:rgba(201,168,76,.15);border-color:rgba(201,168,76,.4);color:var(--gold-light);}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header"><div class="page-title">💰 Zakat Calculator</div><div class="page-sub">Calculate your obligatory annual almsgiving (2.5%)</div></div>
+
+    <!-- Nisab info -->
+    <div class="card" style="margin-bottom:22px;background:linear-gradient(135deg,rgba(26,92,58,.1),rgba(26,92,58,.03));border-color:rgba(26,92,58,.28)">
+      <div class="card-title">📊 Nisab Threshold (2026 Estimate)</div>
+      <div class="g3" style="font-size:.84rem;color:var(--text-muted);line-height:1.9">
+        <div>🥇 <strong style="color:var(--gold-light)">Gold Nisab</strong><br/>87.48 grams ≈ $8,200 USD</div>
+        <div>🥈 <strong style="color:var(--gold-light)">Silver Nisab</strong><br/>612.36 grams ≈ $750 USD</div>
+        <div>⚙️ <strong style="color:var(--gold-light)">Zakat Rate</strong><br/>2.5% on net zakatable wealth</div>
+      </div>
+      <hr/>
+      <div style="font-size:.8rem;color:var(--text-muted)">Zakat is due when wealth exceeds the Nisab and has been held for one full lunar year (Hawl). Consult a scholar for your specific situation.</div>
+    </div>
+
+    <div class="z-tabs">
+      <div class="ztab active" onclick="switchTab('cash',this)">💵 Cash & Savings</div>
+      <div class="ztab" onclick="switchTab('gold',this)">🥇 Gold & Silver</div>
+      <div class="ztab" onclick="switchTab('business',this)">🏢 Business Assets</div>
+      <div class="ztab" onclick="switchTab('combined',this)">📊 Combined Total</div>
+      <div class="ztab" onclick="switchTab('info',this)">📚 Zakat Guide</div>
+    </div>
+
+    <div id="zakat-body"></div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('zakat.html');
+
+let tabs={cash:{total:0,debt:0},gold:{goldVal:0,silverVal:0},business:{total:0,debt:0}};
+
+const NISAB_GOLD=8200, RATE=0.025;
+
+function calcZakat(net){ return net>=NISAB_GOLD ? net*RATE : 0; }
+
+function resultHtml(net,zakat){
+  return `<div class="zakat-result">
+    <div class="zr-label">ZAKAT DUE</div>
+    <div class="zr-amount">$${zakat.toFixed(2)}</div>
+    <div class="zr-note">Net wealth: $${net.toFixed(2)} · ${net>=NISAB_GOLD?'<span style="color:#6fdea0">✅ Above Nisab – Zakat is due</span>':'<span style="color:var(--text-muted)">⚠️ Below Nisab – No zakat yet</span>'}</div>
+  </div>`;
+}
+
+function switchTab(tab, el){
+  document.querySelectorAll('.ztab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderTab(tab);
+}
+
+function renderTab(tab){
+  const body=document.getElementById('zakat-body');
+  if(tab==='cash'){
+    body.innerHTML=`<div class="card"><div class="card-title">💵 Cash & Savings Zakat</div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label>Cash in Hand ($)</label><input type="number" id="z-cash" placeholder="0" oninput="updateCash()"/></div>
+        <div class="form-group"><label>Bank Savings ($)</label><input type="number" id="z-bank" placeholder="0" oninput="updateCash()"/></div>
+      </div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label>Investments / Stocks ($)</label><input type="number" id="z-invest" placeholder="0" oninput="updateCash()"/></div>
+        <div class="form-group"><label>Money Owed to You ($)</label><input type="number" id="z-owed" placeholder="0" oninput="updateCash()"/></div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px"><label>Your Debts (deductible) ($)</label><input type="number" id="z-debt" placeholder="0" oninput="updateCash()"/></div>
+      <div id="cash-result"></div></div>`;
+  } else if(tab==='gold'){
+    body.innerHTML=`<div class="card"><div class="card-title">🥇 Gold & Silver Zakat</div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label>Gold Weight (grams)</label><input type="number" id="z-gold-g" placeholder="0" oninput="updateGold()"/></div>
+        <div class="form-group"><label>Gold Price ($ per gram)</label><input type="number" id="z-gold-p" placeholder="93.50" value="93.50" oninput="updateGold()"/></div>
+      </div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label>Silver Weight (grams)</label><input type="number" id="z-silver-g" placeholder="0" oninput="updateGold()"/></div>
+        <div class="form-group"><label>Silver Price ($ per gram)</label><input type="number" id="z-silver-p" placeholder="1.22" value="1.22" oninput="updateGold()"/></div>
+      </div>
+      <div class="card" style="margin-bottom:14px;font-size:.82rem;color:var(--text-muted);line-height:1.8">
+        <strong style="color:var(--gold-light)">Nisab notes:</strong><br/>
+        Gold Nisab = 87.48g · Silver Nisab = 612.36g<br/>
+        Use the lower (silver) Nisab to be on the safe side according to many scholars.
+      </div>
+      <div id="gold-result"></div></div>`;
+  } else if(tab==='business'){
+    body.innerHTML=`<div class="card"><div class="card-title">🏢 Business Assets Zakat</div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label>Stock / Inventory Value ($)</label><input type="number" id="z-inv" placeholder="0" oninput="updateBiz()"/></div>
+        <div class="form-group"><label>Cash on Hand / Bank ($)</label><input type="number" id="z-bcash" placeholder="0" oninput="updateBiz()"/></div>
+      </div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group"><label>Receivables (money owed) ($)</label><input type="number" id="z-recv" placeholder="0" oninput="updateBiz()"/></div>
+        <div class="form-group"><label>Business Debts ($)</label><input type="number" id="z-bdebt" placeholder="0" oninput="updateBiz()"/></div>
+      </div>
+      <div id="biz-result"></div></div>`;
+  } else if(tab==='combined'){
+    body.innerHTML=`<div class="card"><div class="card-title">📊 Combined Zakat Summary</div>
+      <div style="font-size:.86rem;color:var(--text-muted);line-height:1.9;margin-bottom:16px">
+        Total zakatable wealth from all categories:<br/>
+        <strong style="color:var(--text-light)">Total = Cash + Gold/Silver + Business − All Debts</strong>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(201,168,76,.1)">
+          <span>Cash & Savings</span><span style="color:var(--gold-light)" id="cmb-cash">$0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(201,168,76,.1)">
+          <span>Gold & Silver</span><span style="color:var(--gold-light)" id="cmb-gold">$0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid rgba(201,168,76,.1)">
+          <span>Business Assets</span><span style="color:var(--gold-light)" id="cmb-biz">$0</span></div>
+      </div>
+      ${resultHtml(Object.values(tabs).reduce((a,t)=>{
+        if(t.total!==undefined) return a+Math.max((t.total||0)-(t.debt||0),0);
+        if(t.goldVal!==undefined) return a+(t.goldVal||0)+(t.silverVal||0);
+        return a;
+      },0), calcZakat(Object.values(tabs).reduce((a,t)=>{
+        if(t.total!==undefined) return a+Math.max((t.total||0)-(t.debt||0),0);
+        if(t.goldVal!==undefined) return a+(t.goldVal||0)+(t.silverVal||0);
+        return a;
+      },0)))}
+      </div>`;
+    updateCombined();
+  } else {
+    body.innerHTML=`<div class="card"><div class="card-title">📚 Zakat Guide</div>
+      <div style="font-size:.88rem;color:var(--text-muted);line-height:2">
+        <strong style="color:var(--gold-light)">What is Zakat?</strong><br/>
+        Zakat is the third pillar of Islam — an obligatory annual charity of 2.5% on zakatable wealth held for one lunar year (Hawl) above the Nisab.<br/><br/>
+        <strong style="color:var(--gold-light)">Who must pay?</strong><br/>
+        Every Muslim who is free, adult, sane, and possesses wealth above the Nisab for a complete lunar year.<br/><br/>
+        <strong style="color:var(--gold-light)">Categories of Zakatable Wealth:</strong><br/>
+        • Cash, bank deposits, investments<br/>
+        • Gold and silver (all forms)<br/>
+        • Business inventory and receivables<br/>
+        • Agricultural produce (different rates apply)<br/>
+        • Livestock (specific rules apply)<br/><br/>
+        <strong style="color:var(--gold-light)">NOT subject to Zakat:</strong><br/>
+        • Your home (for personal use)<br/>
+        • Personal car and appliances<br/>
+        • Clothes and furniture<br/><br/>
+        <strong style="color:var(--gold-light)">Recipients (8 categories – Quran 9:60):</strong><br/>
+        • The poor (Al-Fuqara)<br/>
+        • The needy (Al-Masakin)<br/>
+        • Zakat administrators<br/>
+        • New Muslims (Mu'allafat al-Qulub)<br/>
+        • To free slaves<br/>
+        • Those in debt<br/>
+        • In the way of Allah (Fi Sabilillah)<br/>
+        • Stranded travellers (Ibn as-Sabil)
+      </div></div>`;
+  }
+}
+
+function g(id){ return parseFloat(document.getElementById(id)?.value)||0; }
+
+function updateCash(){
+  const total=g('z-cash')+g('z-bank')+g('z-invest')+g('z-owed');
+  const debt=g('z-debt');
+  const net=Math.max(total-debt,0);
+  tabs.cash={total,debt};
+  document.getElementById('cash-result').innerHTML=resultHtml(net,calcZakat(net));
+}
+function updateGold(){
+  const gv=g('z-gold-g')*g('z-gold-p'), sv=g('z-silver-g')*g('z-silver-p');
+  tabs.gold={goldVal:gv,silverVal:sv};
+  document.getElementById('gold-result').innerHTML=resultHtml(gv+sv,calcZakat(gv+sv));
+}
+function updateBiz(){
+  const total=g('z-inv')+g('z-bcash')+g('z-recv');
+  const debt=g('z-bdebt');
+  const net=Math.max(total-debt,0);
+  tabs.business={total,debt};
+  document.getElementById('biz-result').innerHTML=resultHtml(net,calcZakat(net));
+}
+function updateCombined(){
+  const cashNet=Math.max((tabs.cash.total||0)-(tabs.cash.debt||0),0);
+  const goldNet=(tabs.gold.goldVal||0)+(tabs.gold.silverVal||0);
+  const bizNet=Math.max((tabs.business.total||0)-(tabs.business.debt||0),0);
+  document.getElementById('cmb-cash').textContent='$'+cashNet.toFixed(2);
+  document.getElementById('cmb-gold').textContent='$'+goldNet.toFixed(2);
+  document.getElementById('cmb-biz').textContent='$'+bizNet.toFixed(2);
+}
+
+renderTab('cash');
+</script>
+</body>
+</html>

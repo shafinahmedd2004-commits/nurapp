@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NurApp – Adhkar & Duas</title>
+<link rel="stylesheet" href="main.css"/>
+<style>
+.cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.cat-tab{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.14);border-radius:9px;padding:9px 18px;cursor:pointer;font-size:.82rem;color:var(--text-muted);transition:all .2s;font-family:'Lato',sans-serif;}
+.cat-tab:hover{color:var(--text-light);}
+.cat-tab.active{background:rgba(201,168,76,.15);border-color:rgba(201,168,76,.4);color:var(--gold-light);}
+.dua-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.1);border-radius:14px;padding:22px 24px;margin-bottom:14px;transition:border .2s;}
+.dua-card:hover{border-color:rgba(201,168,76,.22);}
+.dc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px;}
+.dc-title{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:2.5px;color:var(--gold);text-transform:uppercase;}
+.dc-meta{font-size:.68rem;color:var(--text-muted);margin-top:3px;}
+.dc-ar{font-family:'Noto Naskh Arabic',serif;font-size:1.7rem;color:var(--gold-light);direction:rtl;text-align:right;line-height:2.3;margin-bottom:10px;}
+.dc-rom{font-size:.8rem;color:rgba(138,122,90,.8);line-height:1.9;font-style:italic;margin-bottom:8px;}
+.dc-trans{font-size:.88rem;color:var(--text-light);line-height:1.9;}
+.dc-footer{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+.times-badge{background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.25);color:var(--gold);border-radius:20px;padding:2px 10px;font-size:.7rem;}
+.source-badge{background:rgba(26,92,58,.1);border:1px solid rgba(26,92,58,.25);color:#6fdea0;border-radius:20px;padding:2px 10px;font-size:.7rem;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div id="sidebar-root"></div>
+  <main class="main">
+    <div class="page-header">
+      <div class="page-header-row">
+        <div><div class="page-title">🌙 Adhkar & Duas</div><div class="page-sub">Daily remembrances and situational supplications</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-icon" id="tog-rom-btn" onclick="toggleRom()">📜 Transliteration: ON</button>
+          <button class="btn-icon" onclick="playAll()">🔊 Audio (soon)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-tabs" id="cat-tabs"></div>
+    <div id="duas-list"></div>
+  </main>
+</div>
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-root').innerHTML = renderSidebar('adhkar.html');
+
+const CATS = [
+  {key:'morning',  label:'☀️ Morning'},
+  {key:'evening',  label:'🌙 Evening'},
+  {key:'eating',   label:'🍽️ Eating'},
+  {key:'sleeping', label:'😴 Sleeping'},
+  {key:'travel',   label:'✈️ Travel'},
+  {key:'stress',   label:'🤲 Distress'},
+  {key:'waking',   label:'🌅 Waking Up'},
+];
+
+let showRom=true;
+let activeKey = localStorage.getItem('adhkar-cat')||'morning';
+
+function renderTabs(){
+  document.getElementById('cat-tabs').innerHTML = CATS.map(c=>`
+    <div class="cat-tab ${c.key===activeKey?'active':''}" onclick="switchCat('${c.key}',this)">${c.label}</div>`).join('');
+}
+
+function switchCat(key, el){
+  activeKey=key;
+  localStorage.setItem('adhkar-cat',key);
+  renderTabs();
+  renderDuas();
+}
+
+function renderDuas(){
+  const list = ADHKAR[activeKey]||[];
+  if(!list.length){ document.getElementById('duas-list').innerHTML='<div style="color:var(--text-muted);text-align:center;padding:40px">No duas in this category yet.</div>'; return; }
+  document.getElementById('duas-list').innerHTML = list.map((d,i)=>`
+    <div class="dua-card">
+      <div class="dc-header">
+        <div>
+          <div class="dc-title">${d.title}</div>
+          <div class="dc-meta">${d.source}</div>
+        </div>
+        <div style="display:flex;gap:7px;flex-shrink:0">
+          <button class="btn-icon" onclick="copyText(\`${d.ar.replace(/`/g,'\\`')}\`)">📋 Arabic</button>
+          <button class="btn-icon" onclick="copyText(\`${d.trans.replace(/`/g,'\\`')}\`)">📋 Trans</button>
+        </div>
+      </div>
+      <div class="dc-ar">${d.ar}</div>
+      <div class="dc-rom" style="display:${showRom?'':'none'}">${d.rom}</div>
+      <div class="dc-trans">${d.trans}</div>
+      <div class="dc-footer">
+        <span class="times-badge">Recite ×${d.times}</span>
+        <span class="source-badge">${d.source}</span>
+      </div>
+    </div>`).join('');
+}
+
+function toggleRom(){
+  showRom=!showRom;
+  document.getElementById('tog-rom-btn').textContent=`📜 Transliteration: ${showRom?'ON':'OFF'}`;
+  document.querySelectorAll('.dc-rom').forEach(el=>el.style.display=showRom?'':'none');
+}
+
+function playAll(){ showToast('Audio feature coming soon 🔊'); }
+
+renderTabs();
+renderDuas();
+</script>
+</body>
+</html>
