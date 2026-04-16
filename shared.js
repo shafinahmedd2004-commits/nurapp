@@ -99,14 +99,43 @@ function getHijriStr(){
   }
 }
 
-// ── Country timezone map (standard offsets) ──────────────────────────────
-const COUNTRY_TZ = { bd:+6, jp:+9, us:-5, de:+1, it:+1, cn:+8, au:+10 };
+// ── Country IANA timezone names (for DST-correct offsets) ────────────────
+// We use Intl.DateTimeFormat to get the REAL current UTC offset including DST.
+const COUNTRY_IANA = {
+  bd:'Asia/Dhaka',      jp:'Asia/Tokyo',          us:'America/New_York',
+  de:'Europe/Berlin',   it:'Europe/Rome',          cn:'Asia/Shanghai',
+  au:'Australia/Sydney',gb:'Europe/London',        fr:'Europe/Paris',
+  tr:'Europe/Istanbul', sa:'Asia/Riyadh',          pk:'Asia/Karachi',
+  in:'Asia/Kolkata',    my:'Asia/Kuala_Lumpur',    id:'Asia/Jakarta',
+  eg:'Africa/Cairo',    ng:'Africa/Lagos',          za:'Africa/Johannesburg',
+  ca:'America/Toronto', mx:'America/Mexico_City',   br:'America/Sao_Paulo',
+  ar:'America/Argentina/Buenos_Aires',              ru:'Europe/Moscow',
+};
+
+// Get real UTC offset (hours, decimal) including DST for an IANA timezone right now.
+// e.g. Europe/Berlin = +2.0 in summer, +1.0 in winter — never wrong.
+function getRealUTCOffset(ianaName){
+  try{
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: ianaName,
+      year:'numeric', month:'numeric', day:'numeric',
+      hour:'numeric', minute:'numeric', second:'numeric',
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(now);
+    const g = type => parseInt(parts.find(p=>p.type===type)?.value||'0');
+    // Build a UTC Date that represents what the clock shows in that timezone
+    const localAsUTC = new Date(Date.UTC(g('year'), g('month')-1, g('day'), g('hour')===24?0:g('hour'), g('minute'), g('second')));
+    return Math.round((localAsUTC - now) / 60000) / 60; // offset in hours
+  } catch(e){ return 0; }
+}
 
 // ── Prayer times ─────────────────────────────────────────────────────────
 // method: 'karachi' = Fajr 18° / Isha 18° (Bangladesh default)
 //         'mwl'     = Fajr 18° / Isha 17° (Muslim World League — all other countries)
 // Asr: always Hanafi shadow-factor 2
-// tzOffset: explicit UTC hours for country tabs; null = browser local tz
+// tzOffset: explicit UTC hours (DST-correct) for country tabs; null = browser local tz
 function calcPrayerTimes(lat=23.8103, lng=90.4125, tzOffset=null, method='karachi'){
   const now = new Date();
   const timezone = (tzOffset !== null) ? tzOffset : (-now.getTimezoneOffset() / 60);

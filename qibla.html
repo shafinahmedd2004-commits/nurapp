@@ -5,13 +5,19 @@
 <title>NurApp – Qibla</title>
 <link rel="stylesheet" href="main.css"/>
 <style>
-.cpass{
-  width:260px;height:260px;border-radius:50%;
+.cpass-outer{
+  width:260px;height:260px;
   position:relative;margin:0 auto;
+}
+@media(max-width:640px){.cpass-outer{width:220px;height:220px;}}
+.cpass{
+  width:100%;height:100%;border-radius:50%;
+  position:relative;
   background:radial-gradient(circle,rgba(26,92,58,.12) 0%,rgba(8,15,9,.92) 70%);
   border:2px solid rgba(201,168,76,.32);
+  transition:transform .1s linear;
+  will-change:transform;
 }
-@media(max-width:640px){.cpass{width:220px;height:220px;}}
 .cpass-ring{position:absolute;inset:8px;border-radius:50%;border:1px solid rgba(201,168,76,.1);}
 .cdir{position:absolute;font-family:'Cinzel',serif;font-size:.72rem;font-weight:700;line-height:1;}
 .cdir.N{top:10px;left:50%;transform:translateX(-50%);color:#e8c97a;}
@@ -53,14 +59,18 @@
           <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px" id="qibla-sub">Select a country or allow location</div>
           <div id="compass-status" style="margin-bottom:16px"></div>
 
-          <div class="cpass" style="margin-bottom:20px">
-            <div class="cpass-ring"></div>
-            <div class="cdir N">N</div>
-            <div class="cdir S">S</div>
-            <div class="cdir E">E</div>
-            <div class="cdir W">W</div>
-            <canvas class="needle-host" id="needle-canvas"></canvas>
-            <div class="cdot"></div>
+          <div class="cpass-outer" style="margin-bottom:20px">
+            <!-- .cpass rotates with the heading so N always faces true North -->
+            <div class="cpass" id="compass-rose">
+              <div class="cpass-ring"></div>
+              <div class="cdir N">N</div>
+              <div class="cdir S">S</div>
+              <div class="cdir E">E</div>
+              <div class="cdir W">W</div>
+            </div>
+            <!-- needle-canvas is outside .cpass so it does NOT rotate with the rose -->
+            <canvas class="needle-host" id="needle-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+            <div class="cdot" style="position:absolute;top:50%;left:50%;"></div>
           </div>
 
           <div style="margin-bottom:14px">
@@ -128,7 +138,7 @@ document.getElementById('sidebar-root').innerHTML = renderSidebar('qibla.html');
 
 // ── Canvas setup ─────────────────────────────────────────────────────────
 const canvas = document.getElementById('needle-canvas');
-const cpass  = canvas.parentElement;
+const cpass  = document.querySelector('.cpass-outer');
 let displayAngle = 291; // Dhaka default
 let targetAngle  = 291;
 let rafId = null;
@@ -238,10 +248,21 @@ let headingOffset = 0;  // Phone compass heading — subtracted so needle = Qibl
 let usingCompass = false;
 
 function updateNeedle(){
-  // If we have a real compass: rotate needle so it always points to Qibla
-  // regardless of phone orientation
-  const angle = usingCompass ? qiblaAngle - headingOffset : qiblaAngle;
-  rotateTo(angle);
+  if(usingCompass){
+    // Rotate the compass ROSE counter-clockwise by the heading,
+    // so the N label always points to true geographic North on screen.
+    const rose = document.getElementById('compass-rose');
+    if(rose) rose.style.transform = `rotate(${-headingOffset}deg)`;
+    // The needle always points to the Qibla bearing (fixed in geographic space).
+    // Since the rose already rotates to show true North, the needle only needs
+    // to point at the Qibla bearing — no subtraction needed.
+    rotateTo(qiblaAngle);
+  } else {
+    // No compass: show static bearing from North; rose stays upright.
+    const rose = document.getElementById('compass-rose');
+    if(rose) rose.style.transform = '';
+    rotateTo(qiblaAngle);
+  }
 }
 
 function showDetails(lat,lng,label){
